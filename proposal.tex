@@ -1,11 +1,65 @@
 \documentclass[a4paper]{article}
-\usepackage{amsmath}
+\usepackage{amsmath,hyperref}
 \begin{document}
-\title{Scientific Computing CS660 Fall '11 HW1}
+\title{Scientific Computing CS660 Fall '11 Final Project Proposal\\ Affine Structure from Motion: an Application of Singular Value Decomposition}
 \author{Angjoo Kanazawa}
 \date{\today}
 \maketitle
 
+\section{Introduction}
+For this project I propose to explore an application of SVD in Computer
+Vision domain. Structure from Motion (SfM) is the problem of
+recovering 3D scene geometry and camera motion from a sequence of 2D
+images. SfM has a wide range of application including 3D model
+reconstruction of real-world objects, 3D motion matching for computer
+graphics, virtual and augmented reality models, camera calibration and
+many more.
 
 
+SfM is a well studied problem with multitude of
+approaches and problem statements. The project will focus on the
+\emph{factorization} method proposed by Tomasi and Kanade, which recovers the structure and motion of
+video sequences under the orthographic projection model. With this
+model, the shape and motion can be recovered simulatenously using a
+Singular Value Decomposition \cite{Tomasi}. This project will follow the project 4 of Derek Hoiem's CS 543/ECE 549
+course at the University of Illinois at Urbana-Champaign:
+\href{http://www.cs.illinois.edu/class/sp11/cs543/hw/hw4.pdf}{project
+  description}. 
+
+
+\section{Outline}
+The outline of the project is as follows:
+\begin{enumerate}
+\item Description of the orthographic camera projection model
+\item Assumptions and problem statement
+\item Tomasi-Kanade Factorization method
+\item Implementation of SfM: recovering a 3D point cloud of a short
+  video sequence using the factorization method (using supplimental materials from the UIUC course web site)
+\item Results and analysis
+\end{enumerate}
+
+\section{Overview of the Factorization Method}
+This will be the main part of the project, but to demonstrate how
+matrix factorization theorems we covered in class will be used, here
+is an overview of the Tomasi-Kanade Factorization Method:
+
+Image sequence, the input to the algorithm, is represented by a $2F\times P$ \emph{measurement matrix
+}$W$, where  $P$ is the number of points tracked through $F$
+frames. Under orthography, given that the origin of the world
+coordinates is set at the centroid of all $P$ points, the orientation
+of the camera at frame $f$ is represented by a pair of orthonormal
+vectors $i_f, j_f \in \mathbf{R}^{3}$ (dimension is 3 because we're
+using homogenous coordinates, $\vec \hat x = (x,y,w)$, to avoid numerical instability for points
+near infinity). These vectors over $F$ frames are collected into a
+\emph{motion matrix} $M\in \mathbf{R}^{2F \times 3}$ $$M =
+\begin{pmatrix}
+  i_1^T\\ \vdots \\  i_F^T \\ j_1^T \\ \vdots j_F^T
+\end{pmatrix}
+$$
+
+
+
+
+\bibliographystyle{plain}
+\bibliography{reference}
 \end{document}
