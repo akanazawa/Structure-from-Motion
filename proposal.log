@@ -1,8 +1,12 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2011.9.4)  19 NOV 2011 20:56
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2011.9.14)  22 NOV 2011 13:29
 entering extended mode
  %&-line parsing enabled.
-**\input proposal.tex
-(./proposal.tex (/usr/share/texmf-texlive/tex/latex/base/article.cls
+**proposal.tex
+(./proposal.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, loaded.
+(/usr/share/texmf-texlive/tex/latex/base/article.cls
 Document Class: article 2007/10/19 v1.4h Standard LaTeX document class
 (/usr/share/texmf-texlive/tex/latex/base/size10.clo
 File: size10.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
@@ -86,7 +90,7 @@ Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
 )
 (/usr/share/texmf-texlive/tex/generic/oberdiek/ifpdf.sty
 Package: ifpdf 2009/04/10 v2.0 Provides the ifpdf switch (HO)
-Package ifpdf Info: pdfTeX in pdf mode not detected.
+Package ifpdf Info: pdfTeX in pdf mode detected.
 )
 (/usr/share/texmf-texlive/tex/generic/oberdiek/ifvtex.sty
 Package: ifvtex 2008/11/04 v1.4 Switches for detecting VTeX and its modes (HO)
@@ -188,18 +192,11 @@ Package: atbegshi 2008/07/31 v1.9 At begin shipout hook (HO)
 \c@Item=\count103
 \c@Hfootnote=\count104
 )
-*hyperref using default driver hdvips*
-(/usr/share/texmf-texlive/tex/latex/hyperref/hdvips.def
-File: hdvips.def 2009/10/09 v6.79a Hyperref driver for dvips
-
-(/usr/share/texmf-texlive/tex/latex/hyperref/pdfmark.def
-File: pdfmark.def 2009/10/09 v6.79a Hyperref definitions for pdfmark specials
-\pdf@docset=\toks21
-\pdf@box=\box28
-\pdf@toks=\toks22
-\pdf@defaulttoks=\toks23
+*hyperref using default driver hpdftex*
+(/usr/share/texmf-texlive/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2009/10/09 v6.79a Hyperref driver for pdfTeX
 \Fld@listcount=\count105
-)) (./proposal.aux)
+) (./proposal.aux)
 \openout1 = `proposal.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 3.
@@ -233,17 +230,37 @@ LaTeX Info: Redefining \pageref on input line 3.
 \@outlinefile=\write3
 \openout3 = `proposal.out'.
 
-\AtBeginShipoutBox=\box29
+\AtBeginShipoutBox=\box28
  [1
 
-] (./proposal.bbl) [2] (./proposal.aux) ) 
-Here is how much of TeX's memory you used:
- 4125 strings out of 495062
- 59087 string characters out of 1182645
- 134543 words of memory out of 3000000
- 7270 multiletter control sequences out of 15000+50000
- 9681 words of font info for 35 fonts, out of 3000000 for 9000
- 28 hyphenation exceptions out of 8191
- 38i,8n,36p,276b,298s stack positions out of 5000i,500n,10000p,200000b,50000s
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+Overfull \hbox (2.19841pt too wide) detected at line 85
+\OML/cmm/m/it/10 P \OT1/cmr/m/n/10 = [[]] [] [[]]
+ []
 
-Output written on proposal.dvi (2 pages, 9064 bytes).
+[2] (./proposal.bbl [3]) [4] (./proposal.aux) ) 
+Here is how much of TeX's memory you used:
+ 4098 strings out of 495061
+ 58614 string characters out of 1182621
+ 136376 words of memory out of 3000000
+ 7228 multiletter control sequences out of 15000+50000
+ 9988 words of font info for 36 fonts, out of 3000000 for 9000
+ 28 hyphenation exceptions out of 8191
+ 38i,15n,36p,269b,402s stack positions out of 5000i,500n,10000p,200000b,50000s
+</usr/share/texmf-texlive/fonts/
+type1/public/amsfonts/cm/cmbx10.pfb></usr/share/texmf-texlive/fonts/type1/publi
+c/amsfonts/cm/cmbx12.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/
+cm/cmex10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmmi10.p
+fb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/sha
+re/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-tex
+live/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texmf-texlive/fonts/t
+ype1/public/amsfonts/cm/cmr17.pfb></usr/share/texmf-texlive/fonts/type1/public/
+amsfonts/cm/cmr7.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/c
+msy10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmsy7.pfb></
+usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmti10.pfb>
+Output written on proposal.pdf (4 pages, 157191 bytes).
+PDF statistics:
+ 105 PDF objects out of 1000 (max. 8388607)
+ 17 named destinations out of 1000 (max. 500000)
+ 41 words of extra memory for PDF output out of 10000 (max. 10000000)
+
