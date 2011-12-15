@@ -43,7 +43,8 @@ outFrame = find(isnan(trackedXs(end, :)));
 trackedXs(:, outFrame) = [];
 trackedYs(:, outFrame) = [];
 numPoints = numPoints - numel(outFrame);
-% to draw path from one frame to another:
+
+%% Draw path of random 20 points
 
 % X1toX2 = [keyXs trackedXs(2,:)'];
 % Y1toY2 = [keyYs trackedYs(2,:)'];
@@ -54,3 +55,9 @@ pt1 =  [trackedYs(1,:)' trackedXs(1,:)' ones(numPoints, 1)];
 pt2 =  [trackedYs(2,:)' trackedXs(2,:)' ones(numPoints, 1)];
 arrow(pt1, pt2, 'Length', 4, 'Width', 1, 'EdgeColor', 'y', ...
       'FaceColor', 'b');
+
+%% Step 3: Structure for Motion
+
+worldPoints = get3DPoints(trackedXs, trackedYs);
+
+%% Step 4: plot 3D points
