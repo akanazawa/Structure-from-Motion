@@ -30,24 +30,24 @@ load 'supp/tracked_points';
 
 [F P] = size(Xs); 
 
-keyboard
 %%% 0. to eliminate translation, center all points. i.e. subtract
 %% mean of each row
 Xs = bsxfun(@minus, Xs, mean(Xs, 2));
 Ys = bsxfun(@minus, Ys, mean(Ys, 2));
 
 %%% 1. compute W
-W = zeros(2*F, P);
-for f = 1:F
-    W(2*f-1:2*f, :) = [Xs(f, :); Ys(f, :)];
-end
+W = [Xs; Ys];
+% W = zeros(2*F, P);
+% for f = 1:F
+%     W(2*f-1:2*f, :) = [Xs(f, :); Ys(f, :)];
+% end
 
 %%% 2. SVD of W
 [U D V] = svd(W);
 
 %%% 3. make M', S' 
 Mhat = U(:, 1:3)*sqrt(D(1:3, 1:3)); 
-Shat = sqrt(D(1:3, 1:3))*V(1:3, :);
+Shat = sqrt(D(1:3, 1:3))*V(:, 1:3)';
 
 %%% 4. Compute Q, impose the metric constraints
 Is = Mhat(1:F, :);
@@ -59,13 +59,13 @@ gfun = @(a, b)[ a(1)*b(1), a(1)*b(2)+a(2)*b(1), a(1)*b(3)+a(3)*b(1), ...
 G = zeros(3*F, 6);
 for f = 1:3*F
     if f <= F
-        G(f, :) = gfun(Is(f), Is(f));
+        G(f, :) = gfun(Is(f,:), Is(f,:));
     elseif f <= 2*F
-        fprintf('do j(%d)\n', mod(f, F+1)+1);
-        G(f, :) = gfun(Js(mod(f, F+1)+1), Js(mod(f, F+1)+1));
+        %        fprintf('do j(%d) ', mod(f, F+1)+1);
+        G(f, :) = gfun(Js(mod(f, F+1)+1, :), Js(mod(f, F+1)+1, :));
     else
-        fprintf('do j(%d)\n', mod(f, 2*F));
-        G(f, :) = gfun(Is(mod(f, 2*F)), Js(mod(f, 2*F)));
+        %        fprintf('\tdo i,j(%d)', mod(f, 2*F));
+        G(f, :) = gfun(Is(mod(f, 2*F),:), Js(mod(f, 2*F),:));
     end
 end
 
@@ -81,10 +81,19 @@ L = [l(1) l(2) l(3);...
 
 Q = chol(L); % finally!
 
-fprintf('check %e', all(all(inv(Q) == Q')));
+%fprintf('check %g\n', all(all(L = Q'*Q)));
 
 %%% 5. get M and S
 M = Mhat*Q;
-S = Q'*S;
+S = inv(Q)*Shat;
 
+sfigure;
+plot3(Shat(1, :), Shat(2,:), Shat(3,:),'k.'); hold on;
+plot3(S(1, :), S(2,:), S(3,:),'b.');
+plot3(0,0,0,'gs');
+grid on;
+title(['3D points from tracked points: before and after eliminating ' ...
+       'affine ambiguity upto orthography']);
+legend('before enforcing metric constraints',['after enforcing metric ' ...
+                    'constraints', 'origin']);
 
