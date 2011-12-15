@@ -56,8 +56,8 @@ pt2 =  [trackedYs(2,:)' trackedXs(2,:)' ones(numPoints, 1)];
 arrow(pt1, pt2, 'Length', 4, 'Width', 1, 'EdgeColor', 'y', ...
       'FaceColor', 'b');
 
-%% Step 3: Structure for Motion
+%% Step 3: Affine Structure for Motion via Factorization
 
-worldPoints = get3DPoints(trackedXs, trackedYs);
+[M S] = do_factorization(trackedXs, trackedYs);
 
 %% Step 4: plot 3D points

@@ -1,4 +1,4 @@
-function [M S] = get3DPoints()
+function [M S] = do_factorization(Xs, Ys)
 %%%%%%%%%%
 % do_factorization.m
 % Using tracked points, implement affine structure from motion
@@ -6,7 +6,7 @@ function [M S] = get3DPoints()
 % "Shape and Motion from Image Streams under Orthography: a
 % Factorization Method" 1992 by Tomasi and Kanade.
 %
-% INPUT - startXs, startYs: tracked 2D points from sequences in
+% INPUT - Xs, Ys: tracked 2D points from sequences in
 % format F x P, where F is the number of frames and P is the number
 % of points tracked
 % OUTPUT - M: 2*F by 3 Motion matrix (Camera movements)
@@ -25,6 +25,7 @@ function [M S] = get3DPoints()
 % Angjoo Kanazawa 12/14/'11
 %%%%%%%%%%
 
+% for the moment use the trustworthy points
 load 'supp/tracked_points';
 
 [F P] = size(Xs); 
