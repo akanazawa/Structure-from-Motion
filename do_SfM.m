@@ -1,3 +1,4 @@
+function do_SfM(config_file)
 %%%%%%%%%%
 % CMSC660 Fall'11 Final Project: Affine Structure from Motion(SfM)
 % doSfM.m
@@ -5,15 +6,16 @@
 %
 % Angjoo Kanazawa 11/23/'11
 %%%%%%%%%%
-IMDIR = 'supp/images/'; % location of all images
-OUTDIR = 'supp/'; % where to save mat files
-TAU = 1000;
-imFiles  = getImageSet(IMDIR); % gets cell array of frames
+
+%% Evaluate the global configuration file and load parameters
+eval(config_file);
+
+imFiles  = getImageSet(IMAGE_DIR); % gets cell array of frames
 F = length(imFiles); % number of frames
 
 %% Step 1: get initial keypoints
 fprintf('getting intial keypoints from %s\n', imFiles{1});
-[keyXs, keyYs]= getKeypoints(imread(imFiles{1}), TAU);    
+[keyXs, keyYs]= do_getKeypoints(imread(imFiles{1}), TAU);    
 
 % sfigure;
 % imagesc(imread(imFiles{1})); colormap('gray'); hold on;
@@ -43,21 +45,37 @@ trackedXs(:, outFrame) = [];
 trackedYs(:, outFrame) = [];
 numPoints = numPoints - numel(outFrame);
 
-%% Draw path of random 20 points
+%% Draw path of random 30 points
+load 'supp/tracked_points';
+trackedXs = Xs;
+trackedYs = Ys;
+numPoints = size(trackedXs, 2);
+
+pts = randperm(numPoints);
+pts = pts(1:30);
+
+sfigure; imagesc(imread(imFiles{1})); colormap('gray'); hold on;
+plot(trackedYs(1, pts), trackedXs(1,pts),'y.');
+plot(trackedYs(2, pts), trackedXs(2,pts),'b.');
+for f = 1:F-1
+    u = trackedXs(f+1, pts)- trackedXs(f, pts);
+    v = trackedYs(f+1, pts)-trackedYs(f, pts);
+    uv= [u;v];
+    quiver(trackedYs(f, pts),trackedXs(f, pts),uv(2,:), uv(1,:));
+end
 
 % X1toX2 = [keyXs trackedXs(2,:)'];
 % Y1toY2 = [keyYs trackedYs(2,:)'];
 %line(Y1toY2', X1toX2', 'color', 'b', 'LineStyle', '-.');
 
-sfigure; imagesc(imread(imFiles{1})); colormap('gray'); hold on;
+
 pt1 =  [trackedYs(1,:)' trackedXs(1,:)' ones(numPoints, 1)];
 pt2 =  [trackedYs(2,:)' trackedXs(2,:)' ones(numPoints, 1)];
+
 arrow(pt1, pt2, 'Length', 4, 'Width', 1, 'EdgeColor', 'y', ...
       'FaceColor', 'b');
 
 %% Step 3: Affine Structure for Motion via Factorization
-
-% load 'supp/tracked_points';
 
 % sfigure; imagesc(imread(imFiles{1})); colormap('gray'); hold on;
 % pt1 =  [Ys(1,:)' Xs(1,:)' ones(numPoints, 1)];
@@ -95,7 +113,13 @@ X = S(1, :);
 Y = S(2, :);
 Z = S(3, :);
 tri = delaunay(X,Y);
-trisurf(tri, X,Y,Z);
+trimesh(tri, X,Y,Z);
 
-mesh(X,Y,Z);
+
+c1 = camera_pos(1,:);
+c2 = camera_pos(2,:);
+displacement = c1 - c2;
+
+quiver3(c1(:, 1), c1(:, 2), c1(:, 3), displacement(:, 1), ...
+        displacement(:, 2),displacement(:, 3))
 

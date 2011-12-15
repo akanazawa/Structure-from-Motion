@@ -1,4 +1,4 @@
-function [keyXs, keyYs] = getKeypoints(im, tau)
+function [keyXs, keyYs] = do_getKeypoints(config_file)
 %%%%%%%%%%
 % getKeypoints.m
 % script to get the key points from im using Harris corner detector
@@ -9,6 +9,13 @@ function [keyXs, keyYs] = getKeypoints(im, tau)
 %
 % Angjoo Kanazawa 11/23/'11
 %%%%%%%%%%
+
+%% Evaluate the global configuration file and load parameters
+eval(config_file);
+
+imFiles  = getImageSet(IMAGE_DIR); % gets cell array of frames (img files)
+F = length(imFiles); % number of frames
+
 im = double(im);
 alpha = 0.05;
 radius = 5; % 5 x 5 window
