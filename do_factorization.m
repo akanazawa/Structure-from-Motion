@@ -1,4 +1,4 @@
-function [M S] = do_factorization(Xs, Ys)
+function [M S] = do_factorization(config_file, Xs, Ys)
 %%%%%%%%%%
 % do_factorization.m
 % Using tracked points, implement affine structure from motion
@@ -6,9 +6,10 @@ function [M S] = do_factorization(Xs, Ys)
 % "Shape and Motion from Image Streams under Orthography: a
 % Factorization Method" 1992 by Tomasi and Kanade.
 %
-% INPUT - Xs, Ys: tracked 2D points from sequences in
-% format F x P, where F is the number of frames and P is the number
-% of points tracked
+% INPUT - Xs, Ys (optional): tracked 2D points from sequences in
+% format F x P, where F is the number of frames and P is the
+% number of points tracked. If not supplied will load from the file specified in config.m
+% 
 % OUTPUT - M: 2*F by 3 Motion matrix (Camera movements)
 %        - S: 3 by P Shape matrix (3D world coordinates)
 %
@@ -25,8 +26,16 @@ function [M S] = do_factorization(Xs, Ys)
 % Angjoo Kanazawa 12/14/'11
 %%%%%%%%%%
 
-% for the moment use the trustworthy points
-load 'supp/tracked_points';
+%% Evaluate the global configuration file and load parameters
+eval(config_file);
+
+if nargin == 1
+    data = load(tracked_pts_f);
+    Xs = data.trackedXs; Ys = data.trackedYs;
+    %-- just for now use the trustworthy points...
+    load 'supp/tracked_points';
+    %--
+end
 
 [F P] = size(Xs); 
 
@@ -87,13 +96,53 @@ Q = chol(L); % finally!
 M = Mhat*Q;
 S = inv(Q)*Shat;
 
-sfigure;
-plot3(Shat(1, :), Shat(2,:), Shat(3,:),'k.'); hold on;
-plot3(S(1, :), S(2,:), S(3,:),'b.');
-plot3(0,0,0,'gs');
-grid on;
-title(['3D points from tracked points: before and after eliminating ' ...
-       'affine ambiguity upto orthography']);
-legend('before enforcing metric constraints',['after enforcing metric ' ...
-                    'constraints', 'origin']);
+if VERBOSE
+    %% plot of 3D points
+    sfigure;
+    plot3(Shat(1, :), Shat(2,:), Shat(3,:),'k.'); hold on;
+    plot3(S(1, :), S(2,:), S(3,:),'b.');
+    plot3(0,0,0,'gs');
+    grid on;
+    title(['3D points from tracked points: before and after eliminating ' ...
+           'affine ambiguity upto orthography']);
+    legend('before enforcing metric constraints',['after enforcing metric ' ...
+                        'constraints', 'origin']);
+    %% plot of the predicted 3D path of the cameras
+    %The camera position for each frame is given by the cross product
+    %kf = if × jf. For consistent results, normalize all kf to be unit
+    %vectors. Give three plots, one for each dimension of kf.
+    
+    camera_pos = zeros(F, 3);
+    for f = 1:F
+        kf = cross(M(f,:), M(f+F, :));
+        camera_pos(f,:) = kf/norm(kf); % in unit norm
+    end
 
+    % save this plot in 3 axis.......
+    %sfigure; plot3(camera_pos(:, 1), camera_pos(:, 2), camera_pos(:, 3),'.-');
+    sfigure; plot3(camera_pos(:, 1), camera_pos(:, 2), [1:F], '.-');
+    grid on; zlabel('frames');
+    title('camera position over frame on XY axis');
+    sfigure; plot(camera_pos(:, 1), camera_pos(:, 3), [1:F]);
+    grid on; zlabel('frames');
+    title('camera position over frame on XZ axis');
+    sfigure; plot(camera_pos(:, 2), camera_pos(:, 3));
+    grid on; zlabel('frames');
+    title('camera position over frame on YZ axis');
+    % triangulate..?
+    keyboard
+    X = S(1, :);
+    Y = S(2, :);
+    Z = S(3, :);
+    tri = delaunay(X,Y);
+    trimesh(tri, X,Y,Z);
+
+
+    c1 = camera_pos(1,:);
+    c2 = camera_pos(2,:);
+    displacement = c1 - c2;
+
+    quiver3(c1(:, 1), c1(:, 2), c1(:, 3), displacement(:, 1), ...
+            displacement(:, 2),displacement(:, 3))
+
+end

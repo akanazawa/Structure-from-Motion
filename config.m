@@ -27,7 +27,7 @@ DATA_DIR = [ 'data/' ];
 %----------
 VERBOSE = 0;
 
-%% Feature extraction method currently 'harris' or 'sift'
+%% Featuren Extraction method currently 'harris' or 'sift'
 Feature.method = 'harris'; %'sift';
 
 if strcmp(Feature.method, 'harris')
@@ -39,6 +39,8 @@ else
     
 end
 
+%% FILE NAMES
 % name to save the tracked files
 tracked_pts_f = [DATA_DIR, Feature.method, '_tracked_points.mat'];
-
+% name to save the initial key points
+keypoints_f = [DATA_DIR, Feature.method, '_keypoints.mat'];
