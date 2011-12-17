@@ -19,12 +19,15 @@ eval(config_file);
 % load the data computed in do_getKeypoints.m
 load(keypoints_f, 'keyXs', 'keyYs');
 
+% gets cell array of image file names (frames)
+imFiles  = getImageSet(IMAGE_DIR); 
+F = length(imFiles);
 P =  numel(keyXs);
 if ~exist(tracked_pts_f);
-    trackedXs = zeros(length(imFiles), P);
-    trackedYs = zeros(length(imFiles), P);
+    trackedXs = zeros(F, P);
+    trackedYs = zeros(F, P);
     trackedXs(1, :) = keyXs; trackedYs(1, :) = keyYs;
-    for i=2:length(imFiles)
+    for i=2:F
         [trackedXs(i,:) trackedYs(i,:)] = predictTranslationAll(trackedXs(i-1, :), trackedYs(i-1, :),...
                                                           imread(imFiles{i-1}), imread(imFiles{i}));
     end
