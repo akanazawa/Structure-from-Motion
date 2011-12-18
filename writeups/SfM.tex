@@ -43,7 +43,7 @@
 \documentclass[a4paper]{article}
 \usepackage{amsmath,amssymb,hyperref,graphicx}
 \begin{document}
-\title{3D  Reconstruction of an Object from Image Sequences}
+\title{Affine Structure from Motion}
 \author{Scientific Computing CS660 Fall '11 Final Project \\ Angjoo Kanazawa}
 \date{\today}
 \maketitle
@@ -90,13 +90,13 @@ its simplicity, preserves up to affine transformation of world points
 to image points. Basically it is a linear mapping followed by a translation, where
 points can rotate, scale, and translate but parallelism is
 preserved.\cite[p.38]{Szelski}. 
-\begin{figure}[!ht]
-  \begin{center}
-  \includegraphics[scale=0.8]{ortho.png}
-  \caption{Orthographic Projection} 
-  \label{figures:ortho}
-  \end{center}
-\end{figure}
+% \begin{figure}[!ht]
+%   \begin{center}
+%   \includegraphics[scale=0.6]{ortho.png}
+%   \caption{Orthographic Projection} 
+%   \label{figures:ortho}
+%   \end{center}
+% \end{figure}
 An \emph{orthographic
 camera model} is a specific type of affine camera where the world
 points are projected in parallel onto the image plane, where the depth
@@ -107,18 +107,17 @@ information of the world $Z$, is simply ignored. Mathematically,
 \end{pmatrix} &= \begin{pmatrix}
   1& 0&0 \\0 & 1 & 0
 \end{pmatrix}
+R
 \begin{pmatrix}
   X\\Y\\Z\\
-\end{pmatrix}  +
-\begin{pmatrix}
-  t_1\\t_2
-\end{pmatrix}
-\\
-x &= PX + t
+\end{pmatrix} + \vec t\\
+\vec x = P\vec X + \vec t
 \end{align*}
-Where $P$ is referred to as the projection matrix that does the
-mapping and $t$ is the translation
-vector \cite[p.172]{AZ}. 
+Where $P = \begin{smallmatrix}
+  1& 0&0 \\0 & 1 & 0
+\end{smallmatrix}R$ is referred to as the projection matrix, and $R$
+is a 3 by 3 matrix representing the affine motion (rotation, translation, or
+both) of the camrea and $t$ is the displacement vector \cite[p.172]{AZ}. 
 
 \subsection{Notations and Assumptions}
 \label{sec:notations}
@@ -201,13 +200,13 @@ eigenvector, we accept a window if $min(\lam_1, \lam_2) > \tau$, where
 $\tau$ is predefined threshold \cite{shi}. Figure \ref{fig:Hessian} illustrates
 the components of the Hessisan of frame one. 
 
-\begin{figure}[!ht]
-  \begin{center}
-  \includegraphics[scale=0.5]{ortho.png}
-  \caption{Plot of the image gradients of the first frame} 
-  \label{fig:Hessian}
-  \end{center}
-\end{figure}
+% \begin{figure}[!ht]
+%   \begin{center}
+%   \includegraphics[scale=0.5]{ortho.png}
+%   \caption{Plot of the image gradients of the first frame} 
+%   \label{fig:Hessian}
+%   \end{center}
+% \end{figure}
 
 \subsection{Feature Tracking}
 \label{sec:feature-tracking}
@@ -218,8 +217,9 @@ camera moves, images taken at near time are strongly related to each
 other because they tend to refer to the same scene given the
 assumption of local brightness constancy. This means that under an ideal
 static environment, image at time $t+1$ can be obtained by moving
-every pixl in the at time image $t$ by a suitable amount \cite{shi}. 
+every pixel in the at time image $t$ by a suitable amount \cite{shi}. 
 
+\subsubsection{Estimating Camera Motion}
 This displacement can be either a translation or an affine mapping or
 the combination of both, but since the world is rigid we will only
 consider translation. Mathematically, given $\vec x$ at frame $t$, we
@@ -230,14 +230,14 @@ the dissimilarity
  I(\vec x + \vec d, t+1) - I(\vec x, t) = 0
 \end{equation}
 
-
-Again, the taylor expansion of $I(\vec x+\vec d, t+1) = I(x+u, y+v, t+1) \approx I(x,y,t+1) + I_xu +
-I_yv + \cO(d^Td)$. Substituting that back to \eqref{eq:1},
+The taylor expansion of $$I(\vec x+\vec d, t+1) = I(x+u, y+v, t+1) \approx I(x,y,t) + I_xu +
+I_yv + I(x+u, y+u, t) + I_t \cO(d^Td).$$  Where $I_t$ is the temporal
+gradient (for time) $I_t(\vec x) =I(\vec x, t) - I(\vec x+\vec d, t+1)$. Substituting that back to \eqref{eq:1},
 \begin{align*}
-0 &=I(\vec x + \vec d, t+1) - I(\vec x, t)\\
-&= \grad I(\vec x)\cdot \vec d - I_t(\vec x)
+0 &\approx I(x,y,t) + I_xu +I_yv  + I_t - I(x,y,t)\\
+&= \grad I(\vec x)\cdot \vec d + I_t(\vec x)
 \end{align*}
-Where $I_t(\vec x) =I(\vec x, t) - I(\vec x, t+1)$. Here we have 2
+ Here we have 2
 unknowns but only one constraint. In fact even with the brightness
 constancy assumption, it is difficult to track a single point unless
 the point is extremely distinctive \cite{KLT}. Therefore we consider minimizing
@@ -250,7 +250,8 @@ A\vec d &= \vec t
 \end{align*}
 Using the normal equations, we solve this least linear squares
 problem:
-\begin{align*}\label{eq:klt}
+
+\begin{align}  \label{eq:klt}
   A^TA\vec d &= A^T \vec t\\
   \begin{pmatrix}
     I_x(x_1) & \hdots & I_x(x_{|W|}) \\
@@ -271,57 +272,64 @@ I_x(x_{|W|})& \hdots & I_y(x_{|W|}) \\
   \begin{pmatrix}
     I_t(x_1)\\ \vdots \\ I_t(x_{|w|})
   \end{pmatrix}\\
-\sum_{\vec x\in W}
 \begin{pmatrix}
-   I_x^2 & I_xI_y\\I_y^2 & I_yI_x
+\sum_{\vec x\in W}  I_x^2 &\sum_{\vec x\in W} I_xI_y\\ \sum_{\vec x\in
+  W} I_y^2 &\sum_{\vec x\in W} I_yI_x
 \end{pmatrix}
 \begin{pmatrix}
   u \\ v
 \end{pmatrix}
- &=\sum_{\vec x\in W}
+ &=
 \begin{pmatrix}
-  I_xI_t\\I_yI_t
-\end{pmatrix}
-\end{align*}
+ \sum_{\vec x\in W} I_xI_t\\ \sum_{\vec x\in W}I_yI_t
+\end{pmatrix} \\
+Z\vec d &= \vec e
+\end{align}
+
+Since solving for $\vec d$ by the method above requires us to konw
+$I_t$, which requires an initial displacement $\vec d_0$, so we solve
+for the verctor iteratively. Namely, we start with $\vec d_0
+=(0,0)^T$ to compute $I_{t_0} = I(\vec x, t+1) - I(\vec x, t)$, then
+solve for $\vec d_1$ using $I_{t_0}$. We iterate this until $||\vec
+d_k - \vec d_{k+1}|| \le \delta$, $\delta$ some threshold.
 
 \subsubsection{Numerical Stability}
 \label{sec:numerical-stability}
-We can dolve for $\vec d$ in 
- In analyzing of the numerical stability of the solution of
- \eqref{eq:klt}, we can discuss the optimality of the keypoint
- selection. Note that 
+Can we solve \eqref{eq:4} reliably? It seems like in practice, it's
+not unusual to solve for $\vec d$ simply by taking the pseudo-inverse of $Z$,
+which is known to be atrocious in the Scientific Computing
+community. But there is a reason why here it is okay to be less
+careful about solving for $\vec d$ and it leads to the discussion of
+the optimality of our key point selecter.
+
+For \eqref{eq:4} to be stable, w need $Z$ to be
+well-conditioned. The condition number of $Z$ is $\kappa(Z) =
+||A||||A\inv||$. Here, $Z$ is symmetric and positive definite (because
+it's the Hessian), so the condition number is also the ratio of the
+smallest to largest eigenvalue. Here it's $\frac{\lam_1}{\lam_2}$.
+Note that our criteria for choosing our keypoint was $\min(\lam_1,
+\lam_2) > \tau$. So we are assured that $\lam_2$ eigenvalue is
+sufficiently large. Since we're dealing with images with a maximum
+possible pixel value, we are also assured that $\lam_1$ will not be
+arbitrarily large. So with this keypoint selection, we're guaranteed to
+have a well conditioned $Z$. This is why in practice it is okay to use the pseudo-inverse
+of $Z$. This means in MATLAB the \texttt{mldivide} is more than
+sufficient.
 
 
 \subsection{The Factorization Method}
-
-\section{Results and Analysis}
-\label{sec:results}
-
-
-\section{Conclusion}
-\label{sec:conclusion}
-
-
-Affine cameras combine the effect of affine transformation in the 3D
-space, orthographic projection, and an affine transformation in the 2D
-image space. i.e. $$P=[\text{3 by 3 affine transformation}]\begin{pmatrix}
-  1&0 & 0& 0 \\0 & 1& 0 & 0 \\ 0 & 0 & 0 & 1
-\end{pmatrix}[\text{4 by 4 affine transformation}] $$ For factorization, we can explicitly denote the mapping
-and translation of the projection matrix $P$, and write it
-as a linear combination of mapping and translation. In
-inhomogeneous coordinates, this projection is $x =RX + t$, where $t$
-is the translation and $R$ is the rotation/orientation of the camera.
-
-For SfM, the image sequence is represented by a $2F\times P$ \emph{measurement matrix
+As discussed in \ref{sec:ortho}, orthographic camera model projects
+the world points onto the image plane as a linear mapping followed by
+a translation $x = PX + t$. Using the set of tracked corresponding
+points, we can represent the image sequence by a $2F\times P$ \emph{measurement matrix
 }$W$, where $w_{fp} = (x_{fp}, y_{fp})^T$, and
 $P$ is the number of points tracked through $F$
-frames.  
+frames.   
 
 To get rid of the translation term, we center the image points by
 subtracting the mean (centroid) of image points, and assume that
 the world coordinate system is at the centroid of the 3D points. Then,
-the orientation (rotation)
-of the camera at frame $f$ is represented by orthonormal
+the orientation (rotation) of the camera at frame $f$ is represented by orthonormal
 vectors $i_f, j_f, k_f \in \mathbf{R}^{3}$, where each vector
 corresponds to the x, y, and z-axis of the image plane
 respectively. Under orthography with the $z$ axis along the optical
@@ -384,6 +392,18 @@ and $\hat S =\tilde \Sigma^{1/2}V_3^T$. This solution can be refined
 by eliminating affine ambiguity, but this algorithm is numerically
 stable and it is guaranteed to converge to the global minimum of the
 least squares problem.
+
+\section{Eliminating Affine Ambiguity}
+
+
+
+\section{Results and Analysis}
+\label{sec:results}
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
 \bibliographystyle{plain}
 \bibliography{reference}
 \end{document}
