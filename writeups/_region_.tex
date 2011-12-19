@@ -1,4 +1,4 @@
-\newcommand{\sig}{\sigma}
+\message{ !name(SfM.tex)}\newcommand{\sig}{\sigma}
 \newcommand{\Sig}{\Sigma}
 \newcommand{\eps}{\epsilon}
 \newcommand{\del}{\delta}
@@ -43,6 +43,8 @@
 \documentclass[a4paper]{article}
 \usepackage{amsmath,amssymb,hyperref,graphicx}
 \begin{document}
+
+\message{ !name(SfM.tex) !offset(-2) }
 \title{Affine Structure from Motion}
 \author{Scientific Computing CS660 Fall '11 Final Project \\ Angjoo Kanazawa}
 \date{\today}
@@ -113,9 +115,9 @@ R
 \end{pmatrix} + \vec t\\
 \vec x &= M\vec X + \vec t
 \end{align*}
-Where $M = \begin{pmatrix}
+Where $M = (\begin{smallmatrix}
   1& 0&0 \\0 & 1 & 0
-\end{pmatrix}R \in \mathbf{R}^{2\times 3}$ is referred to as the projection matrix, and $R$
+)\end{smallmatrix}R \in \mathbf{R}^{2\times 3}$ is referred to as the projection matrix, and $R$
 is a 3 by 3 matrix representing the affine motion (rotation, translation, or
 both) of the camera and $t$ is the displacement vector
 \cite[p.172]{AZ}. In another words $M$ encapsluates the motion of the
@@ -130,8 +132,8 @@ $\vec x =(x,y)^T$.
 
 $I(x,y)$ denotes the pixel intensity value of image $I$, and $I(x,y,t)$ denotes the
 pixel value of image $I$ at time $t$. $\grad I$ is the image gradient
-$[I_x  I_y]$ and $H$ is the image hessian $\begin{pmatrix}  I_x^2
-  & I_xI_y \\ I_yI_x & I_y^2\end{pmatrix}$
+$[I_x  I_y]$ and $H$ is the image hessian $\begin{smallmatrix}  I_x^2
+  & I_xI_y \\ I_yI_x & I_y^2\end{smallmatrix}$
 
 In this project, all projections are orthographic \ref{sec:ortho}
 and the camera motion is affine. The images are assumed to have a mean-zero Gaussian noise. The world projected on the image
@@ -146,16 +148,7 @@ Given $F$ frames of sequencial images (videos), obtain $P$ trajectory
 of image points for all $F$: $\{x_{fp} = (u_{fp}, v_{fp})^T
 \forall F, P$ and solve for $X_{p}$, the world coordinate of all $P$ points.
 these observation. 
-For the experiments, the hotel image stream used in the original
-Tomasi and Kanade paper was used. Frames 1, 15, 30, and 45 are
-in figure \ref{fig:hotel}. 
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{ortho.png}
-%   \caption{frames 1, 15, 30, and 45 of the hotel image stream} 
-%   \label{fig:hotel}
-%   \end{center}
-% \end{figure}
+
 \section{Structure for Motion}
 \label{sec:main}
 There are three main components for 3D reconstruction of an image stream. First we need to select a subset of
@@ -167,15 +160,8 @@ are critical for a successful 3D reconstruction.
 \subsection{Keypoint Selection}
 \label{sec:keypoint-selection}
 It's not computationally possible to solve the world coordinate for every pixel of image sequences. We need to
-select keypoints in the image that are reliable, salient, and
+select keypoints in the image that are distinct, reliable and
 meaningful. 
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{hessian.png}
-%   \caption{Plot of the image gradients of the first frame} 
-%   \label{fig:Hessian}
-%   \end{center}
-% \end{figure}
 
 \emph{Harris corner detector} is an optimal feature selection for the
 tracker that is used for this project. (It's optimality is discussed
@@ -218,13 +204,11 @@ eigenvector, we accept a window if $min(\lam_1, \lam_2) > \tau$, where
 $\tau$ is predefined threshold \cite{shi}. Figure \ref{fig:Hessian} illustrates
 the components of the Hessisan of frame one. 
 
-Using the harris detector, X points were found on frame 1 of the hotel
-sequence \ref{fig:keypoints}.
 % \begin{figure}[!ht]
 %   \begin{center}
-%   \includegraphics[scale=0.5]{keypoints.png}
-%   \caption{First P keypoints found on frame 1} 
-%   \label{fig:keypoints}
+%   \includegraphics[scale=0.5]{ortho.png}
+%   \caption{Plot of the image gradients of the first frame} 
+%   \label{fig:Hessian}
 %   \end{center}
 % \end{figure}
 
@@ -305,22 +289,13 @@ I_x(x_{|W|})& \hdots & I_y(x_{|W|}) \\
 \end{pmatrix} \\
 Z\vec d &= \vec e
 \end{align}
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{tracked.png}
-%   \caption{Plot of the random 20 points tracked over all frames} 
-%   \label{fig:track}
-%   \end{center}
-% \end{figure}
+
 Since solving for $\vec d$ by the method above requires us to konw
 $I_t$, which requires an initial displacement $\vec d_0$, so we solve
 for the verctor iteratively. Namely, we start with $\vec d_0
 =(0,0)^T$ to compute $I_{t_0} = I(\vec x, t+1) - I(\vec x, t)$, then
 solve for $\vec d_1$ using $I_{t_0}$. We iterate this until $||\vec
 d_k - \vec d_{k+1}|| \le \delta$, $\delta$ some threshold.
-
-Figure \ref{fig:track} is the tracked path of 20 random keypoints over
-the entire sequence. The round circle is the position at frame 1.
 
 \subsubsection{Numerical Stability}
 \label{sec:numerical-stability}
@@ -463,7 +438,6 @@ W&\approx U_{2F\times 3}\Sigma_{3 \times 3} V_{3\times P}^T\\
 By using SVD, the factorization algorithm achieves numerical stability
 and we are guaranteed to converge to the global minimum of
 \eqref{eq:fact3} \cite{Morris}. 
-
 \section{Eliminating Affine Ambiguity}
 
 One possible solution to estimate $\hat M$ and $\hat S$ is to choose
@@ -479,79 +453,8 @@ upgrade this affine approxmiation to a metric approximation by
 imposing the metric information obtained from the motion matrix $M$ to
 solve for $Q$.
 
-Let $$L = QQ^T =
-\begin{pmatrix}
-l_1& l_2& l_3\\
-l_2& l_4& l_5\\
-l_3& l_5& l_6\\
-\end{pmatrix}
-$$. Recall that $\hat M$ is made of orthonormal unit vectors where the first
-$F$ entries of $\hat M$, $\hat i_f\in \mathbf{R}^3$, is orthogonal to the corresponding second $F$
-entries of $M$, $\hat j_f \in \mathbf{R}^3$. Since $M = \hat M Q$, the corresponding
-rows of $\hat M$ must satisfy equations 
-\begin{align*}
-  \label{eq:metric}  
-  \hat i_f^T L \hat i_f &= 1\\
-  \hat j_f^T L \hat j_f &= 1\\
-  \hat i_f^T L \hat j_f &= 0.\\
-\end{align*}
+Let $L = QQ^T$. Recall that $\hat M$ is made of orthonormal unit vectors where the first
+$F$ entries of $\hat M$, $\hat i_f\in 
+\message{ !name(SfM.tex) !offset(14) }
 
-Stacking up elements of $L$ into a vector and re-writing the appropriate terms
-we get an over-deteremined system of linear equations $G\vec l = \vec
-c$, where $$
-  G = \begin{pmatrix}
-    f(\vec i_1, \vec i_1) \\ \vdots \\f(\vec i_F, \vec i_F) \\ \vdots \\
-    f(\vec j_1, \vec j_1) \\ \vdots \\    f(\vec j_F, \vec j_F) \\ \vdots \\
-    f(\vec i_1, \vec j_1) \\ \vdots \\f(\vec i_F, \vec j_F) \\ \vdots \\
-  \end{pmatrix}\in \mathbf{R}^{3F\times 6}$$
- and $\vec c$ is a vector whose first $2F$ entries are 1 and the last
- $F$ entries are 0, and $f(\vec i_f, \vec j_f) = [i_{f1}j_{f1},
- i_{f1}j_{f2}+i_{f2}j_{f1}, i_{f1}j_{f3}+i_{f3}j_{f1}, i_{f2}j_{f2},
- i_{f2}j_{f3}+i_{f3}j_{f2}, i_{f3}j_{f3}]$.
-
-We can solve for $\vec l$ using any least squares problem solver, then
-employ cholesky decomposition to obtain $Q$ \cite{Morita}.
-
-Finally we have $M = \hat MQ$, and $S =Q\inv \hat S$, where $S$
-contains the 3D world point of the $P$ tracked points and $M$ has the
-position of the camera over $F$ frames. 
-
-Figure \ref{fig:3D} is the reconstructed 3D mesh of the hotel
-sequence textured with the first image.
-The camera position in each frame is given by the cross product of
-$M_f$'s rows $\vec i_f \cross \vec j_f$. The 3D path of camera
-movement from each dimension is plotted on \ref{fig:path}.
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{tracked.png}
-%   \caption{Plot of the random 20 points tracked over all frames} 
-%   \label{fig:track}
-%   \end{center}
-% \end{figure}
-
-
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{tracked.png}
-%   \caption{Plot of the random 20 points tracked over all frames} 
-%   \label{fig:track}
-%   \end{center}
-% \end{figure}
-
-\section{Conclusion}
-\label{sec:conclusion}
-Every step discussed above was implemented in MATLAB \ref{source}. 
-
-Although the basic factorization method presented in this project
-assumed orthographic projection and affine camera movement, this
-algorithm can be further refined to 
-
-
-
-\appendix{Source Code}
-\label{source}
-
-
-\bibliographystyle{plain}
-\bibliography{reference}
 \end{document}
