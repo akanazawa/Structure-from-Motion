@@ -90,13 +90,13 @@ its simplicity, preserves up to affine transformation of world points
 to image points. Basically it is a linear mapping followed by a translation, where
 points can rotate, scale, and translate but parallelism is
 preserved.\cite[p.38]{Szelski}. 
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.6]{ortho.png}
-%   \caption{Orthographic Projection} 
-%   \label{figures:ortho}
-%   \end{center}
-% \end{figure}
+\begin{figure}[!ht]
+  \begin{center}
+  \includegraphics[scale=0.6]{ortho.png}
+  \caption{Orthographic Projection} 
+  \label{figures:ortho}
+  \end{center}
+\end{figure}
 An \emph{orthographic
 camera model} is a specific type of affine camera where the world
 points are projected in parallel onto the image plane, where the depth
@@ -149,13 +149,13 @@ these observation.
 For the experiments, the hotel image stream used in the original
 Tomasi and Kanade paper was used. Frames 1, 15, 30, and 45 are
 in figure \ref{fig:hotel}. 
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{ortho.png}
-%   \caption{frames 1, 15, 30, and 45 of the hotel image stream} 
-%   \label{fig:hotel}
-%   \end{center}
-% \end{figure}
+\begin{figure}[!ht]
+  \begin{center}
+  \includegraphics[scale=0.5]{hotel.pdf}
+  \caption{frames 1, 15, 30, and 45 of the hotel image stream} 
+  \label{fig:hotel}
+  \end{center}
+\end{figure}
 \section{Structure for Motion}
 \label{sec:main}
 There are three main components for 3D reconstruction of an image stream. First we need to select a subset of
@@ -169,13 +169,13 @@ are critical for a successful 3D reconstruction.
 It's not computationally possible to solve the world coordinate for every pixel of image sequences. We need to
 select keypoints in the image that are reliable, salient, and
 meaningful. 
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{hessian.png}
-%   \caption{Plot of the image gradients of the first frame} 
-%   \label{fig:Hessian}
-%   \end{center}
-% \end{figure}
+\begin{figure}[!ht]
+  \begin{center}
+  \includegraphics[scale=0.5]{hessian.pdf}
+  \caption{Plot of the image gradients of the first frame} 
+  \label{fig:Hessian}
+  \end{center}
+\end{figure}
 
 \emph{Harris corner detector} is an optimal feature selection for the
 tracker that is used for this project. (It's optimality is discussed
@@ -220,13 +220,13 @@ the components of the Hessisan of frame one.
 
 Using the harris detector, 518 points were found on frame 1 of the hotel
 sequence \ref{fig:keypoints}.
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{keypoints.pdf}
-%   \caption{First 518 keypoints found on frame 1} 
-%   \label{fig:keypoints}
-%   \end{center}
-% \end{figure}
+\begin{figure}[!ht]
+  \begin{center}
+  \includegraphics[scale=0.5]{keypoints.pdf}
+  \caption{First 518 keypoints found on frame 1} 
+  \label{fig:keypoints}
+  \end{center}
+\end{figure}
 
 \subsection{Feature Tracking}
 \label{sec:feature-tracking}
@@ -305,13 +305,13 @@ I_x(x_{|W|})& \hdots & I_y(x_{|W|}) \\
 \end{pmatrix} \\
 Z\vec d &= \vec e
 \end{align}
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{tracked.png}
-%   \caption{Plot of the random 20 points tracked over all frames} 
-%   \label{fig:track}
-%   \end{center}
-% \end{figure}
+\begin{figure}[!ht]
+  \begin{center}
+  \includegraphics[scale=0.5]{tracked.pdf}
+  \caption{Plot of the random 30 points tracked over all frames} 
+  \label{fig:track}
+  \end{center}
+\end{figure}
 Since solving for $\vec d$ by the method above requires us to konw
 $I_t$, which requires an initial displacement $\vec d_0$, so we solve
 for the verctor iteratively. Namely, we start with $\vec d_0
@@ -464,6 +464,13 @@ W&\approx U_{2F\times 3}\Sigma_{3 \times 3} V_{3\times P}^T\\
 By using SVD, the factorization algorithm achieves numerical stability
 and we are guaranteed to converge to the global minimum of
 \eqref{eq:fact3} \cite{Morris}. 
+\begin{figure}[!ht]
+  \begin{center}
+  \includegraphics[scale=0.8]{camerapath.pdf}
+  \caption{Plot of camera path from each dimension} 
+  \label{fig:path}
+  \end{center}
+\end{figure}
 
 \section{Eliminating Affine Ambiguity}
 
@@ -517,27 +524,34 @@ Finally we have $M = \hat MQ$, and $S =Q\inv \hat S$, where $S$
 contains the 3D world point of the $P$ tracked points and $M$ has the
 position of the camera over $F$ frames. 
 
-Figure \ref{fig:3D} is the reconstructed 3D mesh of the hotel
-sequence textured with the first image.
+Figure \ref{fig:3D1},\ref{fig:3D2}, and \ref{fig:3D3} are the
+reconstructed 3D world points before and after removing the affine
+ambiguity in different view points.
 The camera position in each frame is given by the cross product of
 $M_f$'s rows $\vec i_f \times \vec j_f$. The 3D path of camera
 movement from each dimension is plotted on \ref{fig:path}.
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{tracked.png}
-%   \caption{Plot of the random 20 points tracked over all frames} 
-%   \label{fig:track}
-%   \end{center}
-% \end{figure}
 
-
-% \begin{figure}[!ht]
-%   \begin{center}
-%   \includegraphics[scale=0.5]{tracked.png}
-%   \caption{Plot of the random 20 points tracked over all frames} 
-%   \label{fig:track}
-%   \end{center}
-% \end{figure}
+\begin{figure}[!t]
+  \begin{center}
+  \includegraphics[scale=0.5]{3d1.pdf}
+  \caption{3D world points before and after removing the affine ambiguity} 
+  \label{fig:3D1}
+  \end{center}
+\end{figure}
+\begin{figure}[!t]
+  \begin{center}
+  \includegraphics[scale=0.5]{3d2.pdf}
+  \caption{3D world points before and after removing the affine ambiguity} 
+  \label{fig:3D2}
+  \end{center}
+\end{figure}
+\begin{figure}[!t]
+  \begin{center}
+  \includegraphics[scale=0.5]{3d3.pdf}
+  \caption{3D world points before and after removing the affine ambiguity} 
+  \label{fig:3D3}
+  \end{center}
+\end{figure}
 
 \section{Conclusion}
 \label{sec:conclusion}
