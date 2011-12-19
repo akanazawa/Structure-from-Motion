@@ -80,14 +80,21 @@ end
 
 c = [ones(2*F, 1); zeros(F, 1)];
 
-% solve Gl = c (do it by svd later)
-l = G\c;
+% solve Gl = c by SVD and mldivide
+[U S V] = svd(G);
+hatl = U'*c;
+y = [hatl(1)/S(1,1); hatl(2)/S(2,2); hatl(3)/S(3,3); hatl(4)/S(4,4); ...
+    hatl(5)/S(5,5); hatl(6)/S(6,6)];
+l = V*y;
+fprintf('resid with SVD= Gl - c, %g\n', norm(G*l - c));
+l2 = G\c;
+fprintf('resid with mldivide = Gl - c, %g\n', norm(G*l2 - c));
+% they give the same result because matlab is optimized
 
 % could be a programatic way, but hey we "see" 3D or 2D
 L = [l(1) l(2) l(3);...
      l(2) l(4) l(5);...
      l(3) l(5) l(6)] ;
-
 Q = chol(L); % finally!
 
 %fprintf('check %g\n', all(all(L = Q'*Q)));
@@ -105,8 +112,7 @@ if VERBOSE
     grid on;
     title(['3D points from tracked points: before and after eliminating ' ...
            'affine ambiguity upto orthography']);
-    legend('before enforcing metric constraints',['after enforcing metric ' ...
-                        'constraints', 'origin']);
+    legend('before','after', 'origin');
     %% plot of the predicted 3D path of the cameras
     %The camera position for each frame is given by the cross product
     %kf = if × jf. For consistent results, normalize all kf to be unit
@@ -120,29 +126,23 @@ if VERBOSE
 
     % save this plot in 3 axis.......
     %sfigure; plot3(camera_pos(:, 1), camera_pos(:, 2), camera_pos(:, 3),'.-');
-    sfigure; plot3(camera_pos(:, 1), camera_pos(:, 2), [1:F], '.-');
-    grid on; zlabel('frames');
-    title('camera position over frame on XY axis');
-    sfigure; plot(camera_pos(:, 1), camera_pos(:, 3), [1:F]);
-    grid on; zlabel('frames');
-    title('camera position over frame on XZ axis');
-    sfigure; plot(camera_pos(:, 2), camera_pos(:, 3));
-    grid on; zlabel('frames');
-    title('camera position over frame on YZ axis');
+    sfigure; 
+    subplot(131);plot(camera_pos(:, 1), camera_pos(:, 2), '.-');
+    grid on;    title('XY axis');
+    subplot(132);plot(camera_pos(:, 1), camera_pos(:, 3),'.-');
+    grid on;    title('XZ axis');
+    subplot(133); plot(camera_pos(:, 2), camera_pos(:, 3),'.-');
+    grid on;  title('YZ axis');
+    suptitle('camera position over all frames on');
     % triangulate..?
-    keyboard
     X = S(1, :);
     Y = S(2, :);
     Z = S(3, :);
     tri = delaunay(X,Y);
-    trimesh(tri, X,Y,Z);
-
-
-    c1 = camera_pos(1,:);
-    c2 = camera_pos(2,:);
-    displacement = c1 - c2;
-
-    quiver3(c1(:, 1), c1(:, 2), c1(:, 3), displacement(:, 1), ...
-            displacement(:, 2),displacement(:, 3))
-
+    %    trimesh(tri, X,Y,Z);
+    imFiles  = getImageSet(IMAGE_DIR);
+    im = im2double(imread(imFiles{1}));
+    %    sfigure; surf(X,Y,Z,im,'FaceColor', 'texturemap');
+    % sfigure; trimesh(tri, X,Y,Z);
+    % sfigure; trisurf(tri, X,Y,Z, im, 'FaceColor', 'texturemap');
 end

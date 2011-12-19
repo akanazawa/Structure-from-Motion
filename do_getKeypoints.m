@@ -44,10 +44,12 @@ if strcmp(Feature.method, 'harris')
     IxIysm = imfilter(IxIy, filt, 'same');
 
     % display plot
-    % sfigure; subplot(2,2,1); imagesc(im); colormap('gray'); title('original');
-    % subplot(2,2,2); imagesc(Ix); colormap('gray');title('der in x');
-    % subplot(2,2,3); imagesc([Ix2 IxIy; IxIy Iy2]);colormap('gray'); title('hessian');
-    % subplot(2,2,4); imagesc([Ix2sm IxIysm; IxIysm Iy2sm]);colormap('gray'); title('smoothed hessian');
+    if VERBOSE
+        sfigure; subplot(2,2,1); imagesc(im); colormap('gray'); title('original');
+        subplot(2,2,2); imagesc(Ix); colormap('gray');title('der in x');
+        subplot(2,2,3); imagesc([Ix2 IxIy; IxIy Iy2]);colormap('gray'); title('hessian');
+        subplot(2,2,4); imagesc([Ix2sm IxIysm; IxIysm Iy2sm]);colormap('gray'); title('smoothed hessian');
+    end
 
     % compute the corner response matrix = det(H) - a*trace(H)^2
     M = Ix2sm.*Iy2sm - IxIy.^2 - Feature.alpha*(Ix2sm + Iy2sm).^2;

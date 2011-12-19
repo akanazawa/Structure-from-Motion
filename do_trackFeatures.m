@@ -44,17 +44,31 @@ end
 
 %% Draw the path of random 30 tracked points over all frames
 if VERBOSE
+    % frame 1, 15, 30, and 45
+    sfigure; subplot(141); imagesc(imread(imFiles{1}));colormap('gray');
+    axis off;  title('frame 1');
+    subplot(142); imagesc(imread(imFiles{15})); colormap('gray');
+    axis off;  title('frame 15');
+    subplot(143); imagesc(imread(imFiles{30})); colormap('gray');
+    axis off;  title('frame 30');
+    subplot(144); imagesc(imread(imFiles{45})); colormap('gray');
+    axis off;  title('frame 45');
+    suptitle('frame 1, 15, 30, and 45 of the hotel sequence');
+
     pts = randperm(P);
     pts = pts(1:30);
 
     sfigure; imagesc(imread(imFiles{1})); colormap('gray'); hold on;
-    plot(trackedYs(1, pts), trackedXs(1,pts),'bo');
-    plot(trackedYs(2:end, pts), trackedXs(2:end), 'b.');
-    for f = 2:F-1
-        // u = trackedXs(f+1, pts)- trackedXs(f, pts);
-        // v = trackedYs(f+1, pts)-trackedYs(f, pts);
-        // uv= [u;v];
-        // quiver(trackedYs(f, pts),trackedXs(f, pts),uv(2,:), uv(1,:));
+    plot(trackedXs(1, pts), trackedYs(1,pts),'bo');
+    for f=2:F
+        plot(trackedXs(f, pts), trackedYs(f,pts), 'b.');
     end
+    title('the path of random 30 points tracked over all frames');
+    % for f = 1:F-1
+    %      u = trackedXs(f+1, pts)- trackedXs(f, pts);
+    %      v = trackedYs(f+1, pts)-trackedYs(f, pts);
+    %      uv= [u;v];
+    %      quiver(trackedYs(f, pts),trackedXs(f, pts),uv(2,:), uv(1,:));
+    % end
 end
 
