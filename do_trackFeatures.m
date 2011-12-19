@@ -59,7 +59,7 @@ if VERBOSE
     pts = pts(1:30);
 
     sfigure; imagesc(imread(imFiles{1})); colormap('gray'); hold on;
-    plot(trackedXs(1, pts), trackedYs(1,pts),'bo');
+    plot(trackedXs(1, pts), trackedYs(1,pts),'m*');
     for f=2:F
         plot(trackedXs(f, pts), trackedYs(f,pts), 'b.');
     end

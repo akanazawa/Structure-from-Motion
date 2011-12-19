@@ -49,25 +49,26 @@
 \maketitle
 
 \section{Introduction}
-Over the last few decades, the influence of Scientific Computing has
-been so prevelent in almost every area of Science and Engineering. It has
-become a necessary and critical tool for anyone involved in high-level
-research in Computer Science. Computer Vision is one of the quintessential example of a research area that heavily builds upon
-methods discovered in Scientific Computing, where the primary interest
+Over the last few decades, advances in Scientific Computing has
+impacted almost every area of Science and Engineering. Especially in
+Computer Science, it has become a necessary and critical tool for anyone involved in high-level
+research. Computer Vision is one of the quintessential examples of research areas that heavily build upon
+methods studied in Scientific Computing. Numerical methods are very
+prevalent in Computer Vision where the primary interest
 lies in the analysis and understanding of images which are represented
 in numerical matrices. This project explores applications of
 computational algorithms explored in Scientific Computing via tackling
 the problem of 3D reconstruction of an object from a stream of images.
 
 The 3D reconstruction problem consists of a series of challenges starting from developing the
-cameral model and feature representation of the image,
+camera model and feature representation of the image,
 tracking such features over the image sequences , and finally
-reconstructing the 3D geometry from the tracked points. In all of these steps,  The application of algorithms explored in
-Scientific Computing is ubiqutous in all of these steps. 
+reconstructing the 3D geometry from the tracked points. The application of algorithms explored in
+Scientific Computing is ubiquitous in all of these steps. 
 
-The main challenge of recovering 3D geometry of objects and camera motion simultaneously from a set of point
-correspondences is referred to as the Structure from Motion (SfM) problem. The solution to the problem has a
-wide range of application in 3D modelling, virtual and augmented
+The main challenge of recovering 3D geometry of objects and camera
+motion simultaneously from a set of tracked points is referred to as the Structure from Motion (SfM) problem. The solution to the problem has a
+wide range of application in 3D modeling, virtual and augmented
 reality models in computer graphics, camera calibration and many
 more. It is a well studied problem with various approaches; this project focuses on the \emph{factorization} method proposed by Tomasi and Kanade
 \cite{Tomasi} under the orthographic camera projection model. The
@@ -78,18 +79,21 @@ conditions. \cite[p. 435]{AZ}
 This project follows the Project 4 of Derek Hoiem's CS 543/ECE 549
 course at the University of Illinois at Urbana-Champaign:
 \href{http://www.cs.illinois.edu/class/sp11/cs543/hw/hw4.pdf}{project
-  description}. 
+  description}. Section 2 reviews the basics of camera projection
+models, notations and the problem statement. Section 3 presents the
+SfM pipeline in detail. Section 4 touches upon methods to further
+refine the result and we conclude in Section 5. All intermediate
+results for the experiment is discussed in appropriate sections.
 
 \section{Background}
 
 \subsection{Orthographic Projection}
 \label{sec:ortho}
-A camera model transforms a world point into an
-image point. An affine camera, often used for
+A camera model projects world point onto an 2D image plane. An affine camera, often used for
 its simplicity, preserves up to affine transformation of world points
-to image points. Basically it is a linear mapping followed by a translation, where
-points can rotate, scale, and translate but parallelism is
-preserved.\cite[p.38]{Szelski}. 
+to image points. Basically it is a linear mapping of world points followed by a translation, where
+the points can rotate, scale, and translate but parallelism is
+preserved in the projection, i.e. parallel lines remain parallel.\cite[p.38]{Szelski}. 
 \begin{figure}[!ht]
   \begin{center}
   \includegraphics[scale=0.6]{ortho.png}
@@ -99,7 +103,7 @@ preserved.\cite[p.38]{Szelski}.
 \end{figure}
 An \emph{orthographic
 camera model} is a specific type of affine camera where the world
-points are projected in parallel onto the image plane, where the depth
+points are projected in parallel onto the image plane and the depth
 information of the world $Z$, is simply ignored. Mathematically, 
 \begin{align*}
 \begin{pmatrix}
@@ -118,60 +122,69 @@ Where $M = \begin{pmatrix}
 \end{pmatrix}R \in \mathbf{R}^{2\times 3}$ is referred to as the projection matrix, and $R$
 is a 3 by 3 matrix representing the affine motion (rotation, translation, or
 both) of the camera and $t$ is the displacement vector
-\cite[p.172]{AZ}. In another words $M$ encapsluates the motion of the
-camera under orthography.
+\cite[p.172]{AZ}. The rows of $M$, $\vec i, \vec j$, are orthonormal unit vectors
+corresponding to the $x$ and $y$-axis of the image plane respectively. In
+orthography, the location of the camera is $\vec k = \vec i \times
+\vec j$. In another words $M$ encapsulates the motion of the
+camera under orthography. 
 
 \subsection{Notations and Assumptions}
 \label{sec:notations}
-A ``world point'' refers to a point, in the 3D
-coordinate system, $\vec X = (X,Y,Z)^T$, and an ``image point'' refers
-to a point projected on to an image plane in the 2D coordinate system,
+A ``world point'' refers to a point in the 3D
+coordinate system, $\vec X = (X,Y,Z)^T$. An ``image point'' refers
+to a point projected onto an image plane in the 2D coordinate system,
 $\vec x =(x,y)^T$. 
 
 $I(x,y)$ denotes the pixel intensity value of image $I$, and $I(x,y,t)$ denotes the
 pixel value of image $I$ at time $t$. $\grad I$ is the image gradient
-$[I_x  I_y]$ and $H$ is the image hessian $\begin{pmatrix}  I_x^2
-  & I_xI_y \\ I_yI_x & I_y^2\end{pmatrix}$
+$\begin{pmatrix}
+I_x & I_y  
+\end{pmatrix}$ and $H$ is the image hessian $\begin{pmatrix}  I_x^2
+  & I_xI_y \\ I_yI_x & I_y^2\end{pmatrix}$.
 
 In this project, all projections are orthographic \ref{sec:ortho}
 and the camera motion is affine. The images are assumed to have a mean-zero Gaussian noise. The world projected on the image
 sequences is rigid and the pixel intensities of images over sequences are
-constant i.e. all frames taken under static environment with no
+constant i.e. all frames were taken under a static environment with no
 brightness changes. Also for the experiment we assume that there is
 no occlusion.
 
 \subsection{Problem Statement}
 \label{sec:problem-statement}
-Given $F$ frames of sequencial images (videos), obtain $P$ trajectory
-of image points for all $F$: $\{x_{fp} = (u_{fp}, v_{fp})^T
-\forall F, P$ and solve for $X_{p}$, the world coordinate of all $P$ points.
-these observation. 
+Given $F$ frames of sequential images (videos), obtain a trajectory
+of $P$ image points for all $F$: $\{x_{fp} = (u_{fp}, v_{fp})^T
+|f=1,\dots,F, p=1,\dots,P\}$. Then solve for $X_{p}$, the world
+coordinate of all $P$ points from the observations s.t. the distance
+between the real world points and the approximated world points is
+minimized.
+
 For the experiments, the hotel image stream used in the original
 Tomasi and Kanade paper was used. Frames 1, 15, 30, and 45 are
 in figure \ref{fig:hotel}. 
 \begin{figure}[!ht]
-  \begin{center}
-  \includegraphics[scale=0.5]{hotel.pdf}
+  \includegraphics[scale=0.4]{hotel.png}
   \caption{frames 1, 15, 30, and 45 of the hotel image stream} 
-  \label{fig:hotel}
   \end{center}
 \end{figure}
 \section{Structure for Motion}
 \label{sec:main}
-There are three main components for 3D reconstruction of an image stream. First we need to select a subset of
+There are three main components for 3D reconstruction of a scene from
+an image stream. First we need to select a subset of
 ``interesting'' pixels from the original frame. These points are then
-tracked through out the rest of the squence. This set of point
+tracked through out the rest of the sequence. This set of point
 correspondence across all frames is then fed into the factorization algorithm. Appropriate keypoint selection and accurate feature tracking
 are critical for a successful 3D reconstruction. 
 
 \subsection{Keypoint Selection}
 \label{sec:keypoint-selection}
-It's not computationally possible to solve the world coordinate for every pixel of image sequences. We need to
-select keypoints in the image that are reliable, salient, and
-meaningful. 
+It's neither computationally possible nor optimal to solve the world coordinate
+for every pixel of image sequences. Many of the features in an image are
+repetative and undistinctive that it is not helpful to have arbitrary
+many point correspondences. Instead, we need to select keypoints in
+the image that are reliable, salient, and meaningful. 
 \begin{figure}[!ht]
   \begin{center}
-  \includegraphics[scale=0.5]{hessian.pdf}
+  \includegraphics[scale=0.5]{hessian.png}
   \caption{Plot of the image gradients of the first frame} 
   \label{fig:Hessian}
   \end{center}
@@ -179,13 +192,13 @@ meaningful.
 
 \emph{Harris corner detector} is an optimal feature selection for the
 tracker that is used for this project. (It's optimality is discussed
-in section \ref{sec:feature-tracking}). The idea is that we should easily recognize an interesting point by looking through a
+in section \ref{sec:feature-tracking}). The idea is that if a pixel is
+``interestin'', we should easily recognize it by looking through a
 small window, where shifting a window in any direction
-should give a large change in intensity i.e. we accept a point $\vec x$ if SSD of
-the displacement of the window by $(u,v)^T$, $E(u,v) =
-\sum_{(x,y)\in W} [I(x+u, y+v) - I(x,y)]^2$, is large in all
-direction. 
-Assuming $\vec d = (u,v)^T$ is small, the taylor series expansion of $I$ is
+would give a large change in intensity. i.e. we accept a point $\vec x$ if SSD of
+the displacement of the window by some distance $\vec d=(u,v)^T$, is large in all
+direction:$$E(u,v) =\sum_{(x,y)\in W} [I(x+u, y+v) - I(x,y)]^2$$ 
+Assuming $\vec d$ is small, the taylor series expansion of $I$ is
 $$I(x+u, y+v) \approx I(x,y) + I_xu +I_yv + \cO(d^Td)$$ where $I_x
 =\frac{\partial I}{\partial x} $, $I_y = \frac{\partial I}{\partial y}$.
 
@@ -214,15 +227,15 @@ I_yv - I(x,y)]^2\\
 \end{align*}
   Since the two eigenvalues of $H$
 ,$\lam_1, \lam_2$, denotes the amount of change in the direction of its corresponding
-eigenvector, we accept a window if $min(\lam_1, \lam_2) > \tau$, where
+eigenvector, we accept a window if $$min(\lam_1, \lam_2) > \tau,$$ where
 $\tau$ is predefined threshold \cite{shi}. Figure \ref{fig:Hessian} illustrates
-the components of the Hessisan of frame one. 
+the components of the Hessian of frame one. 
 
 Using the harris detector, 518 points were found on frame 1 of the hotel
 sequence \ref{fig:keypoints}.
 \begin{figure}[!ht]
   \begin{center}
-  \includegraphics[scale=0.5]{keypoints.pdf}
+  \includegraphics[scale=0.5]{keypoints.png}
   \caption{First 518 keypoints found on frame 1} 
   \label{fig:keypoints}
   \end{center}
@@ -232,7 +245,7 @@ sequence \ref{fig:keypoints}.
 \label{sec:feature-tracking}
 Now using the detected keypoint, we track these points over all frames
 using the Kanade-Lucas-Tomasi (KLT) Tracker \cite{KLT}.
-The basis of KLT tracker is that although image intensities change as
+The basic idea of the KLT tracker is that although image intensities change as
 camera moves, images taken at near time are strongly related to each
 other because they tend to refer to the same scene given the
 assumption of local brightness constancy. This means that under an ideal
@@ -240,9 +253,8 @@ static environment, image at time $t+1$ can be obtained by moving
 every pixel in the at time image $t$ by a suitable amount \cite{shi}. 
 
 \subsubsection{Estimating Camera Motion}
-This displacement can be either a translation or an affine mapping or
-the combination of both, but since the world is rigid we will only
-consider translation. Mathematically, given $\vec x$ at frame $t$, we
+This displacement can be a translation, an affine mapping, or
+the combination of both. Here we only consider translation because the world is rigid. Mathematically, given $\vec x$ at frame $t$, we
 want to find a displacement vector, $\vec d=(u,v)^T$, that minimizes
 the dissimilarity
 \begin{equation}
@@ -251,28 +263,29 @@ the dissimilarity
 \end{equation}
 
 The taylor expansion of $$I(\vec x+\vec d, t+1) = I(x+u, y+v, t+1) \approx I(x,y,t) + I_xu +
-I_yv + I(x+u, y+u, t) + I_t \cO(d^Td).$$  Where $I_t$ is the temporal
-gradient (for time) $I_t(\vec x) =I(\vec x, t) - I(\vec x+\vec d, t+1)$. Substituting that back to \eqref{eq:1},
+I_yv +  I_t +  \cO(d^Td).$$  Where $I_t$ is the temporal
+gradient (for time) $I_t(\vec x) =I(\vec x, t) - I(\vec x+\vec d,
+t+1)$. Substituting that back to \eqref{eq:1}, we obtain a system of
+linear equation:
 \begin{align*}
 0 &\approx I(x,y,t) + I_xu +I_yv  + I_t - I(x,y,t)\\
 &= \grad I(\vec x)\cdot \vec d + I_t(\vec x)
 \end{align*}
- Here we have 2
-unknowns but only one constraint. In fact even with the brightness
+But here we have 2 unknowns and only one constraint. In fact even with the brightness
 constancy assumption, it is difficult to track a single point unless
 the point is extremely distinctive \cite{KLT}. Therefore we consider minimizing
 the dissimilarity within a small window (typically around 15 x 15) and
 obtain an overdetermined linear system of equations:
 \begin{align*}
-\sum_{\vec x\in W} \grad I(\vec x) \cdot \vec d &= \sum_{\vec x\in W}
+\sum_{\vec x\in W} \grad I(\vec x) \cdot \vec d &= - \sum_{\vec x\in W}
 I_t \\
-A\vec d &= \vec t
+A\vec d &= -\vec t
 \end{align*}
 Using the normal equations, we solve this least linear squares
 problem:
 
 \begin{align}  \label{eq:klt}
-  A^TA\vec d &= A^T \vec t\\
+  A^TA\vec d &= -A^T \vec t\\
   \begin{pmatrix}
     I_x(x_1) & \hdots & I_x(x_{|W|}) \\
    \vdots &  & \vdots \\
@@ -283,7 +296,7 @@ problem:
    \vdots &  & \vdots \\
 I_x(x_{|W|})& \hdots & I_y(x_{|W|}) \\
   \end{pmatrix}
-\vec d  &= 
+\vec d  &= -
   \begin{pmatrix}
     I_x(x_1) & \hdots &   I_y(x_1)  \\
    \vdots &  & \vdots \\
@@ -299,7 +312,7 @@ I_x(x_{|W|})& \hdots & I_y(x_{|W|}) \\
 \begin{pmatrix}
   u \\ v
 \end{pmatrix}
- &=
+ &=-
 \begin{pmatrix}
  \sum_{\vec x\in W} I_xI_t\\ \sum_{\vec x\in W}I_yI_t
 \end{pmatrix} \\
@@ -307,20 +320,23 @@ Z\vec d &= \vec e
 \end{align}
 \begin{figure}[!ht]
   \begin{center}
-  \includegraphics[scale=0.5]{tracked.pdf}
+  \includegraphics[scale=0.5]{tracked.png}
   \caption{Plot of the random 30 points tracked over all frames} 
   \label{fig:track}
   \end{center}
 \end{figure}
-Since solving for $\vec d$ by the method above requires us to konw
+Since solving for $\vec d$ by the method above requires us to know
 $I_t$, which requires an initial displacement $\vec d_0$, so we solve
-for the verctor iteratively. Namely, we start with $\vec d_0
+for the vector iteratively. Namely, we start with $\vec d_0
 =(0,0)^T$ to compute $I_{t_0} = I(\vec x, t+1) - I(\vec x, t)$, then
 solve for $\vec d_1$ using $I_{t_0}$. We iterate this until $||\vec
 d_k - \vec d_{k+1}|| \le \delta$, $\delta$ some threshold.
 
-Figure \ref{fig:track} is the tracked path of 20 random keypoints over
-the entire sequence. The round circle is the position at frame 1.
+Here, points that go out of the frame at one point in the sequence are discarded, but there are
+methods to alleviate for points that disappear and comeback through
+out the sequence \cite{Morita}. 
+Figure \ref{fig:track} is the tracked path of 30 random keypoints over
+the entire sequence. The magenta start is the position of points at frame 1.
 
 \subsubsection{Numerical Stability}
 \label{sec:numerical-stability}
@@ -329,7 +345,7 @@ not unusual to solve for $\vec d$ simply by taking the pseudo-inverse of $Z$,
 which is known to be atrocious in the Scientific Computing
 community. But there is a reason why here it is okay to be less
 careful about solving for $\vec d$ and it leads to the discussion of
-the optimality of our key point selecter.
+the optimality of our keypoint selector.
 
 For \eqref{eq:4} to be stable, w need $Z$ to be
 well-conditioned. The condition number of $Z$ is $\kappa(Z) =
@@ -337,27 +353,30 @@ well-conditioned. The condition number of $Z$ is $\kappa(Z) =
 it's the Hessian), so the condition number is also the ratio of the
 smallest to largest eigenvalue. Here it's $\frac{\lam_1}{\lam_2}$.
 Note that our criteria for choosing our keypoint was $\min(\lam_1,
-\lam_2) > \tau$. So we are assured that $\lam_2$ eigenvalue is
+\lam_2) > \tau$. So we are assured that the smaller eigenvalue is
 sufficiently large. Since we're dealing with images with a maximum
-possible pixel value, we are also assured that $\lam_1$ will not be
+possible pixel value, we are also assured that the larger eigenvalue will not be
 arbitrarily large. So with this keypoint selection, we're guaranteed to
 have a well conditioned $Z$. This is why in practice it is okay to use the pseudo-inverse
-of $Z$. This means in MATLAB the \texttt{mldivide} is more than
+of $Z$. In the experiment, the average condition number was around 2. This means in MATLAB solving for $d$ using the
+\texttt{mldivide} operator is more than
 sufficient.
-
 
 \subsection{The Factorization Method}
 \label{sec:fact}
+
+\subsubsection{Preprocessing}
 As discussed in \ref{sec:ortho}, orthographic camera model projects
 the world points onto the image plane as a linear mapping followed by
-a translation: $x=MX + t$. Our goal is to esimate the camera motion
+a translation: $\vec x=M\vec X + t$. Our goal is to esimate the camera motion
 $M_f$ and $t_f$ for each frame and the world points, $X_p$, of all tracked
 image points, so that the distance of the estimated image point from
 these parameters and the measured image point is close. i.e. our
 minimization problem is:
 \begin{equation}
   \label{eq:fact}
-\min_{M_f, t_f, X_p}\sum_{f}\sum_p ||x_{fp} - (M_fX_p + t_f)||^2  
+\min_{M_f, t_f, X_p}\sum_{f}\sum_p ||\vec x_{fp} - (M_f\vec X_p + \vec
+t_f)||^2  
 \end{equation}
 Taking the derivative of \eqref{eq:fact} with respect to $t_f$ and
 setting it to 0 gives us $t_f = \bar x_f - M_f \bar X_p$, where $\bar
@@ -368,19 +387,21 @@ point is arbitrary so we can just set that to 0, which gives us $t_f =
 centroid of 3D world points to the centroid of the projected image
 \cite[p438]{AZ}. This means that if we center all image points in $f$th
 frame, $t_f=0$ and we can remove the translation term from the
-model. Our objective is now: 
+model. Now our objective is refined to: 
 \begin{equation}
   \label{eq:fact2}
-\min_{M_f, t_f, X_p}\sum_{f}\sum_p ||x_{fp} - M_fX_p||^2  
+\min_{M_f, t_f, X_p}\sum_{f}\sum_p ||\vec x_{fp} - M_f\vec X_p||^2  
 \end{equation}
 
-The key idea of the factorization algorithm is that image measurements
-can be decomposed into the product of two seperate factors
+\subsubsection{Fundamentals}
+The key idea of the factorization algorithm is that image \emph{measurements}
+can be decomposed into the product of two separate factors:
 \emph{motion} and \emph{shape}. 
 
 Using the set of $P$ tracked corresponding
 points, we can represent the image sequence by a $2F\times P$ \emph{measurement matrix
-}$$W =
+}, where we stack the first and the second component of $\vec x$ for
+all frames:$$W =
 \begin{pmatrix}
   x_{11} & \cdots & x_{1P}\\
   \vdots &  & \vdots \\
@@ -391,7 +412,7 @@ points, we can represent the image sequence by a $2F\times P$ \emph{measurement 
 \end{pmatrix}
 $$
 
-Where $\vec x_{ij} = (x_{ij}, y_{ij})^T$ is the $j$-th point in the
+$\vec x_{ij} = (x_{ij}, y_{ij})^T$ is the $j$-th point in the
 $i$-th frame. 
 
 Recall that camera motion under orthography is $$M_f =
@@ -399,13 +420,14 @@ Recall that camera motion under orthography is $$M_f =
   i_f\\
   j_f
 \end{pmatrix}
-$$ where $i_f, j_f \in \mathbf{R}^{3}$, a pair of orthonomal unit vectors
+$$ where $i_f, j_f \in \mathbf{R}^{3}$, a pair of orthonormal unit vectors
 corresponding to the x, y-axis of the image plane respectively. These vectors over $F$ frames are collected into a
 \emph{motion matrix} $M\in \mathbf{R}^{2F \times 3}$ $$M =
 \begin{pmatrix}
   i_1^T\\ \vdots \\  i_F^T \\ j_1^T \\ \vdots j_F^T
 \end{pmatrix}
 $$
+
 We let $s_p = \vec X_p = (X_p, Y_p, Z_p)^T$ be the 3D coordinates of feature $p$ in the fixed world point with the same origin. These vectors are collected into a
 \emph{shape matrix} $S\in \mathbf{R}^{3 \times P}$ s.t. $S =
 \begin{pmatrix}
@@ -435,11 +457,11 @@ Now our objective can be re-written as a least squares problem:
 \cite{Morita}.
 \subsubsection{Rank Theorem}
 Note that $W$ is the product of a $2F$ by $3$ motion matrix and
-$3$ by $P$ shape matrix, therefore under ideal noise free environment,
+$3$ by $P$ shape matrix, therefore under an ideal noise free environment,
 $W$ is at most rank 3 \cite{Tomasi}. Assuming $2F \ge P$, we can
 achieve the least squares approximation by factoring $W$ by SVD: $$W = U\Sigma V^T\\$$
 Because of the rank theorem, the diagonal of $\Sigma$ has at most three nonzero
-greatest singular values in the first three entries. So the closest approximation of $W$, even with noise,
+largest singular values in the first three entries. So the closest approximation of $W$, even with noise,
 is obtained by taking the three greatest singular values of $W$ with
 the corresponding left and right eigenvectors. Namely,
 \begin{align*}
@@ -466,7 +488,7 @@ and we are guaranteed to converge to the global minimum of
 \eqref{eq:fact3} \cite{Morris}. 
 \begin{figure}[!ht]
   \begin{center}
-  \includegraphics[scale=0.8]{camerapath.pdf}
+  \includegraphics[scale=0.4]{camerapath.png}
   \caption{Plot of camera path from each dimension} 
   \label{fig:path}
   \end{center}
@@ -482,8 +504,8 @@ $\hat M =U_{2F\times 3}$ and $\hat S=\Sigma_{3 \times 3}V_{3\times
 The approximation of $\hat M$ and $\hat S$ has such ambiguities, since
 an arbitrary 3 by 3 invertible matrix $Q$ may be inserted in the
 decomposition as $\hat W = (\hat M Q) (Q\inv \hat S)$, i.e. the
-approximation is unique only upto an affine transformation. We can
-upgrade this affine approxmiation to a metric approximation by
+approximation is unique only up to an affine transformation. We can
+upgrade this affine approximation to a metric approximation by
 imposing the metric information obtained from the motion matrix $M$ to
 solve for $Q$.
 
@@ -492,20 +514,20 @@ Let $$L = QQ^T =
 l_1& l_2& l_3\\
 l_2& l_4& l_5\\
 l_3& l_5& l_6\\
-\end{pmatrix}
-$$. Recall that $\hat M$ is made of orthonormal unit vectors where the first
+\end{pmatrix}.
+$$ Recall that $\hat M$ is made of orthonormal unit vectors where the first
 $F$ entries of $\hat M$, $\hat i_f\in \mathbf{R}^3$, is orthogonal to the corresponding second $F$
 entries of $M$, $\hat j_f \in \mathbf{R}^3$. Since $M = \hat M Q$, the corresponding
 rows of $\hat M$ must satisfy equations 
 \begin{align*}
   \label{eq:metric}  
   \hat i_f^T L \hat i_f &= 1\\
-  \hat j_f^T L \hat j_f &= 1\\
+n  \hat j_f^T L \hat j_f &= 1\\
   \hat i_f^T L \hat j_f &= 0.\\
 \end{align*}
 
 Stacking up elements of $L$ into a vector and re-writing the appropriate terms
-we get an over-deteremined system of linear equations $G\vec l = \vec
+we get an over-determined system of linear equations $G\vec l = \vec
 c$, where $$
   G = \begin{pmatrix}
     f(\vec i_1, \vec i_1) \\ \vdots \\f(\vec i_F, \vec i_F) \\ \vdots \\
@@ -518,7 +540,9 @@ c$, where $$
  i_{f2}j_{f3}+i_{f3}j_{f2}, i_{f3}j_{f3}]$.
 
 We can solve for $\vec l$ using any least squares problem solver, then
-employ cholesky decomposition to obtain $Q$ \cite{Morita}.
+employ cholesky decomposition to obtain $Q$ \cite{Morita}. For the
+experiment, solutions obtained by the \texttt{mldivide} operator and
+SVD were identical.
 
 Finally we have $M = \hat MQ$, and $S =Q\inv \hat S$, where $S$
 contains the 3D world point of the $P$ tracked points and $M$ has the
@@ -533,21 +557,21 @@ movement from each dimension is plotted on \ref{fig:path}.
 
 \begin{figure}[!t]
   \begin{center}
-  \includegraphics[scale=0.5]{3d1.pdf}
+  \includegraphics[scale=0.5]{3d1.png}
   \caption{3D world points before and after removing the affine ambiguity} 
   \label{fig:3D1}
   \end{center}
 \end{figure}
 \begin{figure}[!t]
   \begin{center}
-  \includegraphics[scale=0.5]{3d2.pdf}
+  \includegraphics[scale=0.5]{3d2.png}
   \caption{3D world points before and after removing the affine ambiguity} 
   \label{fig:3D2}
   \end{center}
 \end{figure}
 \begin{figure}[!t]
   \begin{center}
-  \includegraphics[scale=0.5]{3d3.pdf}
+  \includegraphics[scale=0.5]{3d3.png}
   \caption{3D world points before and after removing the affine ambiguity} 
   \label{fig:3D3}
   \end{center}
@@ -559,7 +583,7 @@ movement from each dimension is plotted on \ref{fig:path}.
 
 The main challenge for Structure from Motion lies not in creating the
 model of the system but in accurately estimating the parameters of the
-model. Theoretically, an appropriate camera model's parameters are well-defined upto certain
+model. Theoretically, an appropriate camera model's parameters are well-defined up to certain
 ambiguities. However, the model is non-linear and has high sensitivity
 to parameter variations which makes the problem numerically
 ill-conditioned or computationally intensive in direct methods \cite{Morris}.
@@ -567,10 +591,11 @@ ill-conditioned or computationally intensive in direct methods \cite{Morris}.
 The main contribution of the factorization method is that under
 orthography, the relationship between the measurement, the motion and
 the shape matrix has a simple expression regardless of the shape or
-the camera movement \cite{Tomasi}. The algorithm is alos numerically stable and the convergence to minimize the
-norm squared error of the approximation of $W$ is guaranteed. Even
+the camera movement \cite{Tomasi}. The algorithm is also numerically stable and the convergence to minimize the
+norm squared error of the approximation of $W$ is guaranteed because
+of SVD. Even
 when the number of $F$ grows, there are methods to estimate $W$
-efficiently because full SVD of $W$ is not necessary. 
+efficiently because the full SVD of $W$ is not necessary. 
 The factorization method presented in this project assumes orthographic
 projection but the algorithm has been further extended to work with
 most camera models as well\cite{Morris}. 
@@ -580,7 +605,7 @@ proposed the method gives accurate reconstruction of the world
 points. 
 
 \appendix
-
+\small
 \section{Source Code}
 \paragraph{do\_SfM.m}
 The driver.
@@ -752,10 +777,12 @@ end
 if VERBOSE
     pts = randperm(P);
     pts = pts(1:30);
-
     sfigure; imagesc(imread(imFiles{1})); colormap('gray'); hold on;
-    plot(trackedYs(1, pts), trackedXs(1,pts),'bo');
-    plot(trackedYs(2:end, pts), trackedXs(2:end), 'b.');
+    plot(trackedYs(1, pts), trackedXs(1,pts),'m*');
+    for f=2:F
+        plot(trackedXs(f, pts), trackedYs(f,pts), 'b.');
+    end
+    title('the path of random 30 points tracked over all frames');
 end
 \end{verbatim}
 

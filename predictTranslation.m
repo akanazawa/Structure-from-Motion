@@ -65,6 +65,7 @@ while dx > 0.01 & itr < maxItr
     % calculate b = - [sum_w IxIt sum_w IyIt]
     b = - [sum(Ix_w.*It(:)); sum(Iy_w.*It(:))];
     % estimate (u,v)
+    keyboard
     uv_new = A\b;
     % update displacement
     uv = uv+uv_new;

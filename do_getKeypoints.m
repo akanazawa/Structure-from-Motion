@@ -45,10 +45,13 @@ if strcmp(Feature.method, 'harris')
 
     % display plot
     if VERBOSE
-        sfigure; subplot(2,2,1); imagesc(im); colormap('gray'); title('original');
+        sfigure; subplot(2,2,1); imagesc(im);  title('original'); %colormap('gray');
         subplot(2,2,2); imagesc(Ix); colormap('gray');title('der in x');
-        subplot(2,2,3); imagesc([Ix2 IxIy; IxIy Iy2]);colormap('gray'); title('hessian');
-        subplot(2,2,4); imagesc([Ix2sm IxIysm; IxIysm Iy2sm]);colormap('gray'); title('smoothed hessian');
+        subplot(2,2,3); imagesc([Ix2 IxIy; IxIy Iy2]);title('hessian'); ...
+        %colormap('gray'); 
+        subplot(2,2,4); imagesc([Ix2sm IxIysm; IxIysm Iy2sm]); ...
+            title('smoothed hessian');
+        %        colormap('gray');
     end
 
     % compute the corner response matrix = det(H) - a*trace(H)^2

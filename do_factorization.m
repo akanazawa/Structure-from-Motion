@@ -135,13 +135,16 @@ if VERBOSE
     grid on;  title('YZ axis');
     suptitle('camera position over all frames on');
     % triangulate..?
+    % remove the floor keypoint index 480 for mesh
     X = S(1, :);
     Y = S(2, :);
     Z = S(3, :);
-    tri = delaunay(X,Y);
-    %    trimesh(tri, X,Y,Z);
+    X(480) = []; Y(480) = []; Z(480) = [];
+    % tri = delaunay(X,Y);
+    % trisurf(tri,Y,X,Z);
     imFiles  = getImageSet(IMAGE_DIR);
     im = im2double(imread(imFiles{1}));
+    keyboard
     %    sfigure; surf(X,Y,Z,im,'FaceColor', 'texturemap');
     % sfigure; trimesh(tri, X,Y,Z);
     % sfigure; trisurf(tri, X,Y,Z, im, 'FaceColor', 'texturemap');
