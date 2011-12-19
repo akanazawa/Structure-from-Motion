@@ -42,11 +42,33 @@
 
 \documentclass[a4paper]{article}
 \usepackage{amsmath,amssymb,hyperref,graphicx}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 \begin{document}
-\title{Affine Structure from Motion}
-\author{Scientific Computing CS660 Fall '11 Final Project \\ Angjoo Kanazawa}
-\date{\today}
-\maketitle
+\begin{titlepage}
+\begin{center}
+
+\textsc{\LARGE CMSC660 Scientific Computing}\\[1.5cm]
+
+\textsc{\Large Final Project}\\[0.5cm]
+
+\HRule \\[0.5cm]
+
+{ \huge \bfseries Affine Structure from Motion}\\[0.4cm]
+
+\HRule \\[1.5cm]
+
+{\large Angjoo Kanazawa}
+
+\vfill
+
+{\large December 19th, 2011}
+
+\end{center}
+\end{titlepage}
+% \title{Affine Structure from Motion}
+% \author{Scientific Computing CS660 Fall '11 Final Project \\ Angjoo Kanazawa}
+% \date{\today}
+%\maketitle
 
 \section{Introduction}
 Over the last few decades, advances in Scientific Computing has
@@ -162,9 +184,9 @@ For the experiments, the hotel image stream used in the original
 Tomasi and Kanade paper was used. Frames 1, 15, 30, and 45 are
 in figure \ref{fig:hotel}. 
 \begin{figure}[!ht]
-  \includegraphics[scale=0.4]{hotel.png}
+  \includegraphics[scale=0.5]{hotel.png}
+\label{fig:hotel}
   \caption{frames 1, 15, 30, and 45 of the hotel image stream} 
-  \end{center}
 \end{figure}
 \section{Structure for Motion}
 \label{sec:main}
@@ -184,7 +206,7 @@ many point correspondences. Instead, we need to select keypoints in
 the image that are reliable, salient, and meaningful. 
 \begin{figure}[!ht]
   \begin{center}
-  \includegraphics[scale=0.5]{hessian.png}
+  \includegraphics[scale=0.6]{hessian.png}
   \caption{Plot of the image gradients of the first frame} 
   \label{fig:Hessian}
   \end{center}
@@ -235,7 +257,7 @@ Using the harris detector, 518 points were found on frame 1 of the hotel
 sequence \ref{fig:keypoints}.
 \begin{figure}[!ht]
   \begin{center}
-  \includegraphics[scale=0.5]{keypoints.png}
+  \includegraphics[scale=0.75]{keypoints.png}
   \caption{First 518 keypoints found on frame 1} 
   \label{fig:keypoints}
   \end{center}
@@ -316,11 +338,11 @@ I_x(x_{|W|})& \hdots & I_y(x_{|W|}) \\
 \begin{pmatrix}
  \sum_{\vec x\in W} I_xI_t\\ \sum_{\vec x\in W}I_yI_t
 \end{pmatrix} \\
-Z\vec d &= \vec e
+Z\vec d &= \vec e \label{eq:4}
 \end{align}
 \begin{figure}[!ht]
   \begin{center}
-  \includegraphics[scale=0.5]{tracked.png}
+  \includegraphics[scale=0.75]{tracked.png}
   \caption{Plot of the random 30 points tracked over all frames} 
   \label{fig:track}
   \end{center}
@@ -532,7 +554,7 @@ c$, where $$
   G = \begin{pmatrix}
     f(\vec i_1, \vec i_1) \\ \vdots \\f(\vec i_F, \vec i_F) \\ \vdots \\
     f(\vec j_1, \vec j_1) \\ \vdots \\    f(\vec j_F, \vec j_F) \\ \vdots \\
-    f(\vec i_1, \vec j_1) \\ \vdots \\f(\vec i_F, \vec j_F) \\ \vdots \\
+    f(\vec i_1, \vec j_1) \\ \vdots \\f(\vec i_F, \vec j_F)
   \end{pmatrix}\in \mathbf{R}^{3F\times 6}$$
  and $\vec c$ is a vector whose first $2F$ entries are 1 and the last
  $F$ entries are 0, and $f(\vec i_f, \vec j_f) = [i_{f1}j_{f1},
@@ -600,13 +622,14 @@ The factorization method presented in this project assumes orthographic
 projection but the algorithm has been further extended to work with
 most camera models as well\cite{Morris}. 
 
-Every step discussed above was implemented in MATLAB \ref{source}. As
+Every step discussed above was implemented in MATLAB (appendix A). As
 proposed the method gives accurate reconstruction of the world
 points. 
 
 \appendix
 \small
 \section{Source Code}
+\label{source}
 \paragraph{do\_SfM.m}
 The driver.
 \begin{verbatim}
