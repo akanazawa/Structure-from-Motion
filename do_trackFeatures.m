@@ -48,13 +48,13 @@ if VERBOSE
     pts = pts(1:30);
 
     sfigure; imagesc(imread(imFiles{1})); colormap('gray'); hold on;
-    plot(trackedYs(1, pts), trackedXs(1,pts),'y.');
-    plot(trackedYs(2, pts), trackedXs(2,pts),'b.');
-    for f = 1:F-1
-        u = trackedXs(f+1, pts)- trackedXs(f, pts);
-        v = trackedYs(f+1, pts)-trackedYs(f, pts);
-        uv= [u;v];
-        quiver(trackedYs(f, pts),trackedXs(f, pts),uv(2,:), uv(1,:));
+    plot(trackedYs(1, pts), trackedXs(1,pts),'bo');
+    plot(trackedYs(2:end, pts), trackedXs(2:end), 'b.');
+    for f = 2:F-1
+        // u = trackedXs(f+1, pts)- trackedXs(f, pts);
+        // v = trackedYs(f+1, pts)-trackedYs(f, pts);
+        // uv= [u;v];
+        // quiver(trackedYs(f, pts),trackedXs(f, pts),uv(2,:), uv(1,:));
     end
 end
 

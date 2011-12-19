@@ -347,6 +347,7 @@ sufficient.
 
 
 \subsection{The Factorization Method}
+\label{sec:fact}
 As discussed in \ref{sec:ortho}, orthographic camera model projects
 the world points onto the image plane as a linear mapping followed by
 a translation: $x=MX + t$. Our goal is to esimate the camera motion
@@ -564,9 +565,466 @@ Every step discussed above was implemented in MATLAB \ref{source}. As
 proposed the method gives accurate reconstruction of the world
 points. 
 
-\appendix{Source Code}
-\label{source}
+\appendix
 
+\section{Source Code}
+\paragraph{do\_SfM.m}
+The driver.
+\begin{verbatim}
+function do_SfM(config_file)
+%%%%%%%%%%
+% CMSC660 Fall'11 Final Project: Affine Structure from Motion(SfM)
+% doSfM.m
+% Driver script to do affine SfM, to run, do:
+% do_SfM('config'); where 'config' refers to the config.m in this directory
+%
+% Angjoo Kanazawa 11/23/'11
+%%%%%%%%%%
+
+%% Step 1: get initial keypoints
+
+[keyXs, keyYs] = do_getKeypoints(config_file); 
+
+%% Step 2: track features
+
+[trackedXs, trackedYs] = do_trackFeatures(config_file);
+
+%% Step 3: Affine Structure for Motion via Factorization
+
+[M S] = do_factorization(config_file);
+\end{verbatim}
+\paragraph{do\_getKeypoints.m}
+Code for section \ref{sec:keypoint-selection}
+\begin{verbatim}
+function [keyXs, keyYs] = do_getKeypoints(config_file)
+%%%%%%%%%%
+% getKeypoints.m
+% script to get the key points from im using Harris corner detector
+% INPUT - im: image to get the keypoint
+%         tau: threshold to do non-maxima supression
+%
+% OUTPUT - keyXs, keyYs: keypoints found in the initial
+% frame. saves them in the file specified by config.m
+%
+% parts of script referenced from: http://www.csse.uwa.edu.au/~pk/research/matlabfns/
+%
+% Angjoo Kanazawa 11/23/'11
+%%%%%%%%%%
+
+%% Evaluate the global configuration file and load parameters
+eval(config_file);
+
+imFiles  = getImageSet(IMAGE_DIR); % gets cell array of frames (img files)
+F = length(imFiles); % number of frames
+fprintf('getting intial keypoints from %s\n', imFiles{1});
+
+im = double(imread(imFiles{1}));
+
+if strcmp(Feature.method, 'harris')
+    % compute image derivatives in x and y using Peter Kovesi's
+    % accurate derivative
+    [Ix Iy] = derivative5(im, 'x', 'y');
+    % old way
+    % dx = [ -1 0 1 ; -1 0 1 ; -1 0 1]; 
+    % dy = dx';
+    % Ix = imfilter(im, dx, 'same');
+    % Iy = imfilter(im, dy, 'same');
+
+    % compute components of H
+    Ix2 = Ix.^2;
+    Iy2 = Iy.^2;
+    IxIy = Ix.*Iy ; 
+
+    % smooth H using gaussian filter
+    filt = fspecial('gaussian', 6*Feature.sigma, Feature.sigma);
+    Ix2sm = imfilter(Ix2, filt, 'same');
+    Iy2sm = imfilter(Ix2, filt, 'same');
+    IxIysm = imfilter(IxIy, filt, 'same');
+
+    % display plot
+    % sfigure; subplot(2,2,1); imagesc(im); colormap('gray'); title('original');
+    % subplot(2,2,2); imagesc(Ix); colormap('gray');title('der in x');
+    % subplot(2,2,3); imagesc([Ix2 IxIy; IxIy Iy2]);colormap('gray'); title('hessian');
+    % subplot(2,2,4); imagesc([Ix2sm IxIysm; IxIysm Iy2sm]);colormap('gray'); title('smoothed hessian');
+
+    % compute the corner response matrix = det(H) - a*trace(H)^2
+    M = Ix2sm.*Iy2sm - IxIy.^2 - Feature.alpha*(Ix2sm + Iy2sm).^2;
+
+    % perform non-maxima supression over Feature.radius window size
+
+    % Make mask to exclude points within Feature.radius of the image boundary. 
+    bordermask = zeros(size(im));
+    bordermask(Feature.radius+1:end-Feature.radius, Feature.radius+1:end-Feature.radius) = 1;
+    % dilate image
+    M_sup = ordfilt2(M, Feature.radius^2, ones(Feature.radius));
+    % find points that's still there in dilated image & stronger than Feature.tau
+    corner = (M==M_sup) & M>Feature.tau & bordermask;
+
+    % plot
+    if VERBOSE
+        sfigure; subplot(221); imagesc(M); title('corner response M');
+        subplot(222); imagesc(M_sup); title('max dilated');
+        colormap('gray');
+        subplot(223); imagesc(M> Feature.tau); title(['corner response > thresh']);
+        colormap('gray');
+        subplot(224); imagesc(corner); title('corner response max suppressed');
+        colormap('gray');
+    end
+
+    [keyXs, keyYs] = find(corner); % get the r, c index of key points
+
+else %do SIFT
+   keyXs = [];
+   keyYs = [];
+end
+
+if VERBOSE
+    sfigure;
+    imagesc(im); colormap('gray'); hold on;
+    plot(keyYs, keyXs, 'y.');
+    title(['first frame overlayed with keypoints']);
+end
+
+save(keypoints_f, 'keyXs', 'keyYs');
+\end{verbatim}
+\paragraph{do\_trackFeatures.m}
+Code for section \ref{sec:feature-tracking}
+\begin{verbatim}
+function [trackedXs, trackedYs] = do_trackFeatures(config_file)
+%%%%%%%%%%
+% do_trackFeatures.m
+% Top level file to track freatures from the key points obtained in
+% do_getKeypoints.m
+% OUTPUT - trackedXs, trackedYs: the tracked points. Saves the
+% result in the file specified by config.m
+%
+% DESCRIPTION 
+% for each keypoint at frame f, I(x,y,f), we want to compute
+% expected translation in the next frame I(x', y', f+1)
+%
+% Angjoo Kanazawa 12/16/'11
+%%%%%%%%%%
+
+%% Evaluate the global configuration file and load parameters
+eval(config_file);
+
+% load the data computed in do_getKeypoints.m
+load(keypoints_f, 'keyXs', 'keyYs');
+
+% gets cell array of image file names (frames)
+imFiles  = getImageSet(IMAGE_DIR); 
+F = length(imFiles);
+P =  numel(keyXs);
+if ~exist(tracked_pts_f);
+    trackedXs = zeros(F, P);
+    trackedYs = zeros(F, P);
+    trackedXs(1, :) = keyXs; trackedYs(1, :) = keyYs;
+    for i=2:F
+        [trackedXs(i,:) trackedYs(i,:)] = predictTranslationAll(trackedXs(i-1, :), trackedYs(i-1, :),...
+                                                          imread(imFiles{i-1}), imread(imFiles{i}));
+    end
+    % remove nans i.e. points that went out of frame
+    outFrame = find(isnan(trackedXs(end, :)));
+    trackedXs(:, outFrame) = [];
+    trackedYs(:, outFrame) = [];
+    P = P - numel(outFrame);
+    save(tracked_pts_f, 'trackedXs', 'trackedYs', 'P');
+else
+    load(tracked_pts_f);
+end
+
+
+%% Draw the path of random 30 tracked points over all frames
+if VERBOSE
+    pts = randperm(P);
+    pts = pts(1:30);
+
+    sfigure; imagesc(imread(imFiles{1})); colormap('gray'); hold on;
+    plot(trackedYs(1, pts), trackedXs(1,pts),'bo');
+    plot(trackedYs(2:end, pts), trackedXs(2:end), 'b.');
+end
+\end{verbatim}
+
+\textbf{do\_predictTranslationALl.m}
+\begin{verbatim}
+function [newXs newYs] = predictTranslationAll(startXs, startYs,im0,im1);
+%%%%%%%%%%
+% implementation of the KLT tracker introduced in: 
+% Carlo Tomasi and Takeo Kanade. Detection and Tracking of Point Features. Carnegie Mellon University Technical Report CMU-CS-91-132, April 1991.
+% predictTranslationAll.m
+% script to get new X, Y, locations in im1 for all startXs and
+% startYs in im0
+%
+% Computes the gradients here, calls predictTranslation.m to get
+% predict eahc keypoint independently
+%
+% Angjoo Kanazawa 11/23/'11
+%%%%%%%%%%
+
+if ~isa(im0, 'double')  im0 = double(im0); end
+if ~isa(im1, 'double')  im1 = double(im1); end
+
+% Using the brightness constancy assumption, we expect the pixel
+% intensity of location x, y at frame f is same as the pixel
+% instensiy of location x'=x+u, y'=y+v at frame f+1
+% i.e. I(x,y,f) = I(x', y', f+1), where u and v are displacement of
+% pixels in the next frame.
+
+% With an additional constraint that this must be true within w by w window, this amounts to solving the LSP:
+% -I_t(ps) = grad I(ps)[u; v] => Ax = b
+% where A = grad I(ps), b = -I_t(ps), x = [u;v]
+% - ps are all points in the w by w window
+% - I_t is the temporal gradient: I(x'y', f+1) - I(x,y,f)
+
+%% Step 1 compute the gradient of im0 
+
+[Ix Iy] = derivative5(im0, 'x', 'y'); 
+numPoints = length(startXs);
+newXs = zeros(numPoints, 1); newYs =  zeros(numPoints, 1);
+for i=1:numPoints
+    fprintf('.');
+    if ~isnan(startXs(i)) || ~isnan(startYs(i))
+        [newX newY] = predictTranslation(startXs(i), startYs(i), Ix, Iy, ...
+                                     im0, im1);
+    else
+        newX = nan; newY= nan;
+    end
+    newXs(i) = newX; 
+    newYs(i) = newY;
+    end
+end
+\end{verbatim}
+\textbf{predictTranslation.m}
+\begin{verbatim}
+function [newX newY] = predictTranslation(startX, startY,Ix, Iy,im0,im1);
+%%%%%%%%%%
+% implementation of the KLT tracker introduced in: 
+% Carlo Tomasi and Takeo Kanade. Detection and Tracking of Point Features. Carnegie Mellon University Technical Report CMU-CS-91-132, April 1991.
+% predictTranslation.m
+% For a single X Y location, use Ix and Iy, im0 and im1 to compute
+% the new location X', Y' iteratively using Newton-Raphson style iteration
+%
+% Angjoo Kanazawa 11/23/'11
+%%%%%%%%%%
+
+% Using the brightness constancy assumption, we expect the pixel
+% intensity of location x, y at frame f is same as the pixel
+% instensiy of location x'=x+u, y'=y+v at frame f+1
+% i.e. I(x,y,f) = I(x', y', f+1), where u and v are displacement of
+% pixels in the next frame.
+
+% With an additional constraint that this must be true within w by w window, this amounts to solving the LSP:
+% -I_t(ps) = grad I(ps)[u; v] => Ax = b
+% where A = grad I(ps), b = -I_t(ps), x = [u;v]
+% - ps are all points in the w by w window
+% - I_t is the temporal gradient: I(x'y', f+1) - I(x,y,f)
+
+%% Step 1 compute the gradient of im0 
+
+WINDOW = 15; 
+% ignore points that are outside or close to the border (within 3)
+radius = 3;
+bordermask = zeros(size(im0));
+bordermask(radius+1:end-radius, radius+1:end-radius) = 1;
+
+% all points in the window x window 
+% make A: [sum_w Ix*Ix sum_w Ix*Iy; sum_w Ix*Iy sum_w Iy*Iy]
+
+% get the indices of the window grid we want to look at
+[x_w, y_w] = meshgrid(startX-WINDOW:startX+WINDOW, startY-WINDOW:startY+WINDOW);
+Img1_w = interp2(im0, x_w, y_w);    
+Img2_w = interp2(im1, x_w, y_w);    
+Ix_w = interp2(Ix, x_w, y_w);
+Ix_w = Ix_w(~isnan(Ix_w));
+Iy_w = interp2(Iy, x_w, y_w);
+Iy_w = Iy_w(~isnan(Iy_w));
+
+Ixy_w = interp2(Iy.*Ix, x_w, y_w);
+Ixy_w = Ixy_w(~isnan(Ixy_w));
+
+A = [sum(Ix_w.^2) sum(Ixy_w); sum(Ixy_w) sum(Iy_w.^2)];
+
+%% get It = I(x', y', t+1) - (x,y,t+1)
+% iteratively so the first one is, (x0', y0') = (x,y)
+
+diff = norm(Img2_w- Img1_w);
+dx = 100;
+uv = [0;0]; %(x',y') starts at (x0,y0) 
+itr = 0;
+maxItr = 30;
+while dx > 0.01 & itr < maxItr
+    Img2_w_new = interp2(im1, x_w+uv(1), y_w+uv(2));
+    It = Img2_w_new - Img1_w;    
+    % remove if point/window (X+uv) moves out of frame
+    if length(find(isnan(It)))>0
+        uv = [NaN; NaN];
+        break;
+    end
+    % calculate b = - [sum_w IxIt sum_w IyIt]
+    b = - [sum(Ix_w.*It(:)); sum(Iy_w.*It(:))];
+    % estimate (u,v)
+    uv_new = A\b;
+    % update displacement
+    uv = uv+uv_new;
+    itr = itr + 1;
+    diffNew =norm(Img2_w - Img2_w_new);
+    if diff < diffNew
+        break;
+    end
+    dx = abs(diff - diffNew);
+    diff = diffNew;
+end
+if isnan(uv)
+    newX = nan; newY=nan;
+else 
+    %maybe not needed but check if this computed uv sets key point
+    %out of frame
+    x_int = interp2(im1, startX+uv(1), startY+uv(2));
+    if isnan(x_int)
+        newX = nan; newY=nan;
+        fprintf('\nout of frame!\n');
+    else
+        newX = startX+uv(1); newY = startY+uv(2);
+    end
+end
+\end{verbatim}
+
+\paragraph{do\_factorization.m}
+Code for section \ref{sec:fact}.
+\begin{verbatim}
+function [M S] = do_factorization(config_file, Xs, Ys)
+%%%%%%%%%%
+% do_factorization.m
+% Using tracked points, implement affine structure from motion
+% procedure described in
+% "Shape and Motion from Image Streams under Orthography: a
+% Factorization Method" 1992 by Tomasi and Kanade.
+%
+% INPUT - Xs, Ys (optional): tracked 2D points from sequences in
+% format F x P, where F is the number of frames and P is the
+% number of points tracked. If not supplied will load from the file specified in config.m
+% 
+% OUTPUT - M: 2*F by 3 Motion matrix (Camera movements)
+%        - S: 3 by P Shape matrix (3D world coordinates)
+%
+% ALGORITHM 
+%   1. represent the input as a 2F x P measurement matrix W 
+%   2. Compute SVD of W = USV'
+%   3. Define M' = U_3(S_3)^(1/2), S' = (S_3)^(1/2)V'_3 (U_3 means the
+%   first 3 x 3 block, where M' and S' are liner transformations of
+%   the actual M and S
+%   4. Compute Q by imposing the metric constraints i.e. let L = QQ' 
+%   and solve Gl = c for l, use cholseky to recover Q
+%   5. Compute M and S using M', S', and Q
+%  
+% Angjoo Kanazawa 12/14/'11
+%%%%%%%%%%
+
+%% Evaluate the global configuration file and load parameters
+eval(config_file);
+
+if nargin == 1
+    data = load(tracked_pts_f);
+    Xs = data.trackedXs; Ys = data.trackedYs;
+end
+
+[F P] = size(Xs); 
+
+%%% 0. to eliminate translation, center all points. i.e. subtract
+%% mean of each row
+Xs = bsxfun(@minus, Xs, mean(Xs, 2));
+Ys = bsxfun(@minus, Ys, mean(Ys, 2));
+
+%%% 1. compute W
+W = [Xs; Ys];
+
+%%% 2. SVD of W
+[U D V] = svd(W);
+
+%%% 3. make M', S' 
+Mhat = U(:, 1:3)*sqrt(D(1:3, 1:3)); 
+Shat = sqrt(D(1:3, 1:3))*V(:, 1:3)';
+
+%%% 4. Compute Q, impose the metric constraints
+Is = Mhat(1:F, :);
+Js = Mhat(F+1:end, :);
+
+
+gfun = @(a, b)[ a(1)*b(1), a(1)*b(2)+a(2)*b(1), a(1)*b(3)+a(3)*b(1), ...
+              a(2)*b(2), a(2)*b(3)+a(3)*b(2), a(3)*b(3)] ;
+G = zeros(3*F, 6);
+for f = 1:3*F
+    if f <= F
+        G(f, :) = gfun(Is(f,:), Is(f,:));
+    elseif f <= 2*F
+        %        fprintf('do j(%d) ', mod(f, F+1)+1);
+        G(f, :) = gfun(Js(mod(f, F+1)+1, :), Js(mod(f, F+1)+1, :));
+    else
+        %        fprintf('\tdo i,j(%d)', mod(f, 2*F));
+        G(f, :) = gfun(Is(mod(f, 2*F),:), Js(mod(f, 2*F),:));
+    end
+end
+
+c = [ones(2*F, 1); zeros(F, 1)];
+
+% solve Gl = c (do it by svd later)
+l = G\c;
+
+% could be a programatic way, but hey we "see" 3D or 2D
+L = [l(1) l(2) l(3);...
+     l(2) l(4) l(5);...
+     l(3) l(5) l(6)] ;
+
+Q = chol(L); % finally!
+
+%fprintf('check %g\n', all(all(L = Q'*Q)));
+
+%%% 5. get M and S
+M = Mhat*Q;
+S = inv(Q)*Shat;
+
+if VERBOSE
+    %% plot of 3D points
+    sfigure;
+    plot3(Shat(1, :), Shat(2,:), Shat(3,:),'k.'); hold on;
+    plot3(S(1, :), S(2,:), S(3,:),'b.');
+    plot3(0,0,0,'gs');
+    grid on;
+    title(['3D points from tracked points: before and after eliminating ' ...
+           'affine ambiguity upto orthography']);
+    legend('before enforcing metric constraints',['after enforcing metric ' ...
+                        'constraints', 'origin']);
+    %% plot of the predicted 3D path of the cameras
+    %The camera position for each frame is given by the cross product
+    %kf = if × jf. For consistent results, normalize all kf to be unit
+    %vectors. Give three plots, one for each dimension of kf.
+    
+    camera_pos = zeros(F, 3);
+    for f = 1:F
+        kf = cross(M(f,:), M(f+F, :));
+        camera_pos(f,:) = kf/norm(kf); % in unit norm
+    end
+
+    % save this plot in 3 axis.......
+    %sfigure; plot3(camera_pos(:, 1), camera_pos(:, 2), camera_pos(:, 3),'.-');
+    sfigure; plot3(camera_pos(:, 1), camera_pos(:, 2), [1:F], '.-');
+    grid on; zlabel('frames');
+    title('camera position over frame on XY axis');
+    sfigure; plot(camera_pos(:, 1), camera_pos(:, 3), [1:F]);
+    grid on; zlabel('frames');
+    title('camera position over frame on XZ axis');
+    sfigure; plot(camera_pos(:, 2), camera_pos(:, 3));
+    grid on; zlabel('frames');
+    title('camera position over frame on YZ axis');
+    % triangulate..?
+    keyboard
+    X = S(1, :);
+    Y = S(2, :);
+    Z = S(3, :);
+    tri = delaunay(X,Y);
+    trimesh(tri, X,Y,Z);
+end
+\end{verbatim}
 
 \bibliographystyle{plain}
 \bibliography{reference}

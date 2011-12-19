@@ -25,7 +25,7 @@ DATA_DIR = [ 'data/' ];
 %----------
 %% EXPERIMENT SETTINGS
 %----------
-VERBOSE = 0;
+VERBOSE = 1;
 
 %% Featuren Extraction method currently 'harris' or 'sift'
 Feature.method = 'harris'; %'sift';
