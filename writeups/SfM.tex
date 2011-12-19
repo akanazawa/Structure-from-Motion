@@ -519,7 +519,7 @@ position of the camera over $F$ frames.
 Figure \ref{fig:3D} is the reconstructed 3D mesh of the hotel
 sequence textured with the first image.
 The camera position in each frame is given by the cross product of
-$M_f$'s rows $\vec i_f \cross \vec j_f$. The 3D path of camera
+$M_f$'s rows $\vec i_f \times \vec j_f$. The 3D path of camera
 movement from each dimension is plotted on \ref{fig:path}.
 % \begin{figure}[!ht]
 %   \begin{center}
@@ -540,13 +540,29 @@ movement from each dimension is plotted on \ref{fig:path}.
 
 \section{Conclusion}
 \label{sec:conclusion}
-Every step discussed above was implemented in MATLAB \ref{source}. 
-
-Although the basic factorization method presented in this project
-assumed orthographic projection and affine camera movement, this
-algorithm can be further refined to 
 
 
+The main challenge for Structure from Motion lies not in creating the
+model of the system but in accurately estimating the parameters of the
+model. Theoretically, an appropriate camera model's parameters are well-defined upto certain
+ambiguities. However, the model is non-linear and has high sensitivity
+to parameter variations which makes the problem numerically
+ill-conditioned or computationally intensive in direct methods \cite{Morris}.
+
+The main contribution of the factorization method is that under
+orthography, the relationship between the measurement, the motion and
+the shape matrix has a simple expression regardless of the shape or
+the camera movement \cite{Tomasi}. The algorithm is alos numerically stable and the convergence to minimize the
+norm squared error of the approximation of $W$ is guaranteed. Even
+when the number of $F$ grows, there are methods to estimate $W$
+efficiently because full SVD of $W$ is not necessary. 
+The factorization method presented in this project assumes orthographic
+projection but the algorithm has been further extended to work with
+most camera models as well\cite{Morris}. 
+
+Every step discussed above was implemented in MATLAB \ref{source}. As
+proposed the method gives accurate reconstruction of the world
+points. 
 
 \appendix{Source Code}
 \label{source}
