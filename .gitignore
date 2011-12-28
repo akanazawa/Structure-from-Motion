@@ -2,6 +2,8 @@
 
 ### Project Specific ###
 supp/images/longer/
+data/*.mat
+writeup
 
 ### Generic Stuff ###
 ## c++ stuff
