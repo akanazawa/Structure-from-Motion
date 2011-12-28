@@ -3,7 +3,7 @@
 ### Project Specific ###
 supp/images/longer/
 data/*.mat
-writeup
+writeups
 
 ### Generic Stuff ###
 ## c++ stuff
